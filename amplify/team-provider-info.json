@@ -1,0 +1,26 @@
+{
+  "dev": {
+    "awscloudformation": {
+      "AuthRoleName": "amplify-pdfui-dev-37bb3-authRole",
+      "UnauthRoleArn": "arn:aws:iam::148761684122:role/amplify-pdfui-dev-37bb3-unauthRole",
+      "AuthRoleArn": "arn:aws:iam::148761684122:role/amplify-pdfui-dev-37bb3-authRole",
+      "Region": "us-east-1",
+      "DeploymentBucketName": "amplify-pdfui-dev-37bb3-deployment",
+      "UnauthRoleName": "amplify-pdfui-dev-37bb3-unauthRole",
+      "StackName": "amplify-pdfui-dev-37bb3",
+      "StackId": "arn:aws:cloudformation:us-east-1:148761684122:stack/amplify-pdfui-dev-37bb3/5a5143e0-777c-11ef-a5d4-12ada9b86de5",
+      "AmplifyAppId": "dkcmqq1r1kho2"
+    },
+    "categories": {
+      "auth": {
+        "pdfui5246a75d": {}
+      },
+      "storage": {
+        "pdfuib06b8d5d": {
+          "bucketName": "pdfaccessibility-pdfaccessibilitybucket149b7021e-wurx8blwem2d",
+          "region": "us-east-1"
+        }
+      }
+    }
+  }
+}

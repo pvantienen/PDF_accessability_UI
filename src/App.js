@@ -1,25 +1,29 @@
-import logo from './logo.svg';
-import './App.css';
+import React, { useState } from 'react';
+import { Container } from '@mui/material';
+import Header from './components/Header';
+import UploadSection from './components/UploadSection';
+import ProgressAndDownload from './components/ProgressAndDownload';
+import {withAuthenticator } from '@aws-amplify/ui-react';
 
 function App() {
+  const [uploadedFileName, setUploadedFileName] = useState('');
+
+  const handleUploadComplete = (fileName) => {
+    setUploadedFileName(fileName);
+  };
+
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
-    </div>
+      <div>
+      <Header />
+      <Container maxWidth="md" sx={{ marginTop: 4 }}>
+        {!uploadedFileName ? (
+          <UploadSection onUploadComplete={handleUploadComplete} />
+        ) : (
+          <ProgressAndDownload fileName={uploadedFileName} />
+        )}
+      </Container>
+      </div>
   );
 }
 
-export default App;
+export default withAuthenticator(App);
