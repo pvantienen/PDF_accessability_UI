@@ -1,22 +1,33 @@
 import '@aws-amplify/ui-react/styles.css';
 import { FileUploader } from '@aws-amplify/ui-react-storage';
+import { useState } from 'react';
 
-const UploadSection = () => {
+const UploadSection = ({ onUploadComplete }) => {
+  const [files, setFiles] = useState({}); // Track files and their statuses
+
   return (
-    <FileUploader
-      acceptedFileTypes={['.pdf']}
-      path="public/"
-      maxFileCount={100}
-      displayText={{
-        // some text are plain strings
-        dropFilesText: 'drag-and-drop here',
-        browseFilesText: 'Open file picker',
-        // others are functions that take an argument
-        getFilesUploadedText(count) {
-          return `${count} pdf uploaded`;
-        },
-      }}
-    />
+    <>
+      <FileUploader
+        acceptedFileTypes={['.pdf']}
+        path="pdf/"  // Upload files to the 'pdf/' path in S3
+        maxFileCount={1}  // Allow only one file upload at a time
+        onUploadSuccess={({ key }) => {
+          // Inline removal of the 'pdf/' prefix from the key
+          const cleanedKey = key.replace('pdf/', '');
+
+          console.log('Upload successful, file key:', cleanedKey);
+
+          // Update the file status to 'success' with the cleaned key
+          setFiles((prevFiles) => ({
+            ...prevFiles,
+            [cleanedKey]: { status: 'success' },
+          }));
+
+          // Pass the cleaned key (filename without 'pdf/') back to the parent component
+          onUploadComplete(cleanedKey);
+        }}
+      />
+    </>
   );
 };
 
