@@ -1,7 +1,7 @@
 import React from 'react';
 import { Drawer, List, ListItem, ListItemText, Box, Typography } from '@mui/material';
 import ElapsedTimer from './ElapsedTimer';  // Import the ElapsedTimer component
-
+import UpdateAdobeAPICredentials from './UpdateAdobeAPICredentials';
 const LeftNav = ({ uploadedAt, isFileReady }) => {
   return (
     <Drawer
@@ -19,16 +19,7 @@ const LeftNav = ({ uploadedAt, isFileReady }) => {
       </Box>
       <List>
         <ListItem button={"true"}>  {/* Ensure button is a boolean */}
-          <ListItemText primary="File Upload" />
-        </ListItem>
-        <ListItem button={"true"}>  {/* Same here */}
-          <ListItemText primary="Reports" />
-        </ListItem>
-        <ListItem button={"true"}>
-          <ListItemText primary="Analytics" />
-        </ListItem>
-        <ListItem button={"true"}>
-          <ListItemText primary="Settings" />
+          <UpdateAdobeAPICredentials/>
         </ListItem>
       </List>
 

@@ -4,68 +4,74 @@ import Header from './components/Header';
 import UploadSection from './components/UploadSection';
 import DownloadSection from './components/DownloadSection';
 import LeftNav from './components/LeftNav';
-import { withAuthenticator } from '@aws-amplify/ui-react';
+import { ThemeProvider } from '@mui/material/styles';
+import theme from './theme';  // Import the theme
+import { withAuthenticator } from '@aws-amplify/ui-react';  // AWS Amplify Authenticator
 
 function App() {
-  const [uploadedFileName, setUploadedFileName] = useState('');
-  const [uploadedAt, setUploadedAt] = useState(null); // Track when the file was uploaded
-  const [isFileReady, setIsFileReady] = useState(false);
+  const [uploadedFileName, setUploadedFileName] = useState('');  // Track uploaded file name
+  const [uploadedAt, setUploadedAt] = useState(null);  // Track when the file was uploaded
+  const [isFileReady, setIsFileReady] = useState(false);  // Track if the file is ready for download
 
-  // This function is called when the file upload is complete
+  // Function to handle when file upload is completed
   const handleUploadComplete = (fileName) => {
     console.log('Upload completed, file name:', fileName);  // Log the file name
-    setUploadedFileName(fileName);  // Set the uploaded file name
-    setUploadedAt(Date.now());  // Capture the time when the file was uploaded
-    setIsFileReady(false);  // Reset the file ready state
+    setUploadedFileName(fileName);  // Set uploaded file name in state
+    setUploadedAt(Date.now());  // Record the time of the upload
+    setIsFileReady(false);  // Reset file ready state
   };
 
-  // This function will be triggered when the download section finishes preparing the file
+  // Function to handle when file is ready for download
   const handleFileReady = () => {
-    setIsFileReady(true);
+    setIsFileReady(true);  // Set file ready state to true
   };
 
   return (
-    <div style={{ display: 'flex' }}>
-      {/* Left Navigation with timer */}
-      <LeftNav uploadedAt={uploadedAt} isFileReady={isFileReady} />
+    <ThemeProvider theme={theme}>  {/* Wrap app in ThemeProvider to apply the theme */}
+      <Box sx={{ display: 'flex', height: '100vh' }}>  {/* Main layout with flexbox */}
+        {/* Left Navigation with timer */}
+        <LeftNav uploadedAt={uploadedAt} isFileReady={isFileReady} />
 
-      {/* Main Content */}
-      <Box sx={{ flexGrow: 1, p: 3 }}>
-        <Header />
-        <Container maxWidth="md" sx={{ marginTop: 4 }}>
-          {/* Upload Section */}
-          <Box 
-            sx={{ 
-              textAlign: 'center', 
-              padding: 4, 
-              border: '1px dashed gray', 
-              borderRadius: '8px',
-              marginBottom: 4,
-              backgroundColor: '#f9f9f9' 
-            }}
-          >
-            <Typography variant="h5" gutterBottom>
-              Upload Your PDF
-            </Typography>
-            <Typography variant="body1" color="textSecondary" sx={{ marginBottom: 2 }}>
-              Drag & drop your PDF file below, or click to select it.
-            </Typography>
-            {/* Pass the upload complete handler */}
-            <UploadSection onUploadComplete={handleUploadComplete} />
-          </Box>
+        {/* Main Content Area */}
+        <Box sx={{ flexGrow: 1, p: 3 }}>
+          {/* App Header */}
+          <Header />
+          
+          <Container maxWidth="md" sx={{ marginTop: 4 }}>
+            {/* Upload Section */}
+            <Box 
+              sx={{ 
+                textAlign: 'center', 
+                padding: 4, 
+                border: '1px dashed gray', 
+                borderRadius: '8px', 
+                marginBottom: 4, 
+                backgroundColor: '#f9f9f9'
+              }}
+            >
+              <Typography variant="h5" gutterBottom>
+                Upload Your PDF
+              </Typography>
+              <Typography variant="body1" color="textSecondary" sx={{ marginBottom: 2 }}>
+                Drag & drop your PDF file below, or click to select it.
+              </Typography>
 
-          {/* Show Download Section once file is uploaded */}
-          {uploadedFileName && (
-            <Box sx={{ textAlign: 'center', marginTop: 4 }}>
-
-              {/* Pass the uploaded file name and the callback to mark the file as ready */}
-              <DownloadSection filename={uploadedFileName} onFileReady={handleFileReady} />
+              {/* Pass the upload complete handler to UploadSection */}
+              <UploadSection onUploadComplete={handleUploadComplete} />
             </Box>
-          )}
-        </Container>
+
+            {/* Display Download Section when file is uploaded */}
+            {uploadedFileName && (
+              <Box sx={{ textAlign: 'center', marginTop: 4 }}>
+                {/* Show download options when file is ready */}
+                <DownloadSection filename={uploadedFileName} onFileReady={handleFileReady} />
+              </Box>
+            )}
+          </Container>
+        </Box>
       </Box>
-    </div>
+    </ThemeProvider>
   );
 }
 
-export default withAuthenticator(App);
+export default withAuthenticator(App);  // Wrap the app with AWS Amplify Authenticator
