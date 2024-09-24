@@ -1,6 +1,9 @@
 import { getUrl } from 'aws-amplify/storage';
 import { useEffect, useState } from 'react';
-import { Box, Typography, Button, Alert, CircularProgress } from '@mui/material';
+import { Box, Alert } from '@mui/material';  
+import { Button } from '@aws-amplify/ui-react';
+import '@aws-amplify/ui-react/styles.css';
+
 import awsconfig from '../aws-exports';  // Import the Amplify configuration
 
 const bucketName = awsconfig.aws_user_files_s3_bucket;  // Get the bucket name
@@ -50,35 +53,29 @@ const DownloadSection = ({ filename, onFileReady }) => {
   }, [filename, isFileReady, onFileReady]);
 
   return (
-    <Box sx={{ textAlign: 'center', marginTop: 4 }}>
-      {isFileReady ? (
-        <>
-          <Typography variant="h6" gutterBottom>
-            Your file is ready for download:
-          </Typography>
-          <Button
-            variant="contained"
-            color="primary"
-            href={downloadUrl}  // Now passing the URL string instead of the object
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Download Remediated {filename}
-          </Button>
-        </>
-      ) : (
-        <>
-          <Alert severity="info" sx={{ marginBottom: 2 }}>
-            Note: Processing may take 3–15 minutes for files around 1–20 pages. Please be patient.
-          </Alert>
-          <Typography variant="body1" color="textSecondary" gutterBottom>
-            Remediating the PDF...
-          </Typography>
-        
-          <CircularProgress color="primary" size={60} sx={{ marginTop: 2 }} />
-
-        </>
+    <Box sx={{ textAlign: 'center' }}>
+      {!isFileReady && (  // Only show the Alert while the file is processing
+        <Alert severity="info" sx={{ marginBottom: 2 }}>
+          Note: Processing may take 3–15 minutes for files around 1–20 pages. Please be patient.
+        </Alert>
       )}
+
+      <Button
+        fullWidth  // Amplify UI prop to make button full width
+        variation={isFileReady ? 'primary' : 'menu'}  // 'primary' when ready, 'menu' while processing
+        colorTheme={isFileReady ? 'success' : 'info'}  // Change color based on file readiness
+        size="large"
+        isLoading={!isFileReady}  // Show loading spinner while checking file
+        loadingText={'Remediating ' + filename}
+        onClick={() => {
+          if (isFileReady) {
+            window.open(downloadUrl, '_blank');  // Open file in new tab when ready
+          }
+        }}
+        isDisabled={!isFileReady}  // Disable the button until the file is ready
+      >
+        Download Remediated {filename} 
+      </Button>
     </Box>
   );
 };
