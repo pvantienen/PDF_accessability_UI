@@ -65,7 +65,7 @@ const ElapsedTimer = ({ isFileReady, uploadedAt }) => {
           {/* Show alert if more than 15 minutes have passed */}
           {showNote && (
             <Alert severity="warning" sx={{ marginTop: 2 }}>
-              If remediation takes more than 15 minutes, please check the dashboard on the left side with "Update Adobe API Credentials" to check your Adobe credentials usage there.
+              If remediation takes more than 15 minutes, please check the dashboard on the left side with "Update Adobe API Credentials" to check your Adobe credentials usage there and update accordingly.
             </Alert>
           )}
         </>

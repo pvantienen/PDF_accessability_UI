@@ -1,6 +1,6 @@
 import { getUrl } from 'aws-amplify/storage';
 import { useEffect, useState } from 'react';
-import { Box, Alert } from '@mui/material';  
+import { Box, Alert, Typography } from '@mui/material';
 import { Button } from '@aws-amplify/ui-react';
 import '@aws-amplify/ui-react/styles.css';
 
@@ -21,60 +21,64 @@ const DownloadSection = ({ filename, onFileReady }) => {
         
         // Attempt to generate a signed URL for the file in the S3 result folder
         const { url } = await getUrl({
-          path: `result/COMPLIANT_${filename}`,  // Dynamically use the filename
+          path: `result/COMPLIANT_${filename}`,
           options: {
             bucket: {
-              bucketName: bucketName,  // Bucket name
-              region: 'us-east-1',  // Ensure the correct region is provided
+              bucketName: bucketName,
+              region: 'us-east-1',
             },
-            validateObjectExistence: true,  // Only generate if the file exists
-            expiresIn: 300,  // Signed URL expires in 5 minutes (300 seconds)
+            validateObjectExistence: true,
+            expiresIn: 300,
           },
         });
 
         console.log('File is ready. Generated URL:', url);
-        setDownloadUrl(url);  // Save the URL to state
-        setIsFileReady(true);  // Mark the file as ready
-        onFileReady();  // Notify the parent component that the file is ready
+        setDownloadUrl(url);
+        setIsFileReady(true);
+        onFileReady();
 
-        clearInterval(intervalId);  // Stop checking once the file is found
+        clearInterval(intervalId);
       } catch (error) {
         console.log('File not ready or error fetching URL. Retrying in 15 seconds...', error);
-        // Continue checking every 15 seconds until the file is available
       }
     };
 
-    // Start checking for the file every 15 seconds, but only if the file is not ready
     if (filename && !isFileReady) {
-      intervalId = setInterval(checkFileAvailability, 15000);  // Poll every 15 seconds
+      intervalId = setInterval(checkFileAvailability, 15000);
     }
 
-    return () => clearInterval(intervalId);  // Cleanup the interval on component unmount
+    return () => clearInterval(intervalId);
   }, [filename, isFileReady, onFileReady]);
 
   return (
     <Box sx={{ textAlign: 'center' }}>
-      {!isFileReady && (  // Only show the Alert while the file is processing
+      {!isFileReady ? (
         <Alert severity="info" sx={{ marginBottom: 2 }}>
           Note: Processing may take 3–15 minutes for files around 1–20 pages. Please be patient.
         </Alert>
+      ) : (
+        <Box>
+          <Alert severity="success" sx={{ marginBottom: 2 }}>
+            Remediation complete! Once downloaded, verify the remediation using Check PDF accessibility in dashboard on the left navigation.
+          </Alert>
+        </Box>
       )}
 
       <Button
-        fullWidth  // Amplify UI prop to make button full width
-        variation={isFileReady ? 'primary' : 'menu'}  // 'primary' when ready, 'menu' while processing
-        colorTheme={isFileReady ? 'success' : 'info'}  // Change color based on file readiness
+        fullWidth
+        variation={isFileReady ? 'primary' : 'menu'}
+        colorTheme={isFileReady ? 'success' : 'info'}
         size="large"
-        isLoading={!isFileReady}  // Show loading spinner while checking file
+        isLoading={!isFileReady}
         loadingText={'Remediating ' + filename}
         onClick={() => {
           if (isFileReady) {
-            window.open(downloadUrl, '_blank');  // Open file in new tab when ready
+            window.open(downloadUrl, '_blank');
           }
         }}
-        isDisabled={!isFileReady}  // Disable the button until the file is ready
+        isDisabled={!isFileReady}
       >
-        Download Remediated {filename} 
+        Download Remediated {filename}
       </Button>
     </Box>
   );
