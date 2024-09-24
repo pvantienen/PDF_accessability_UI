@@ -5,7 +5,7 @@ const Header = () => (
   <AppBar position="static" color="default">
     <Toolbar>
       <Typography variant="h6">
-        PDF Accessibility: Ohio State University
+        PDF Accessibility
       </Typography>
     </Toolbar>
   </AppBar>

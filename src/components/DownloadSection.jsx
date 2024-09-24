@@ -1,6 +1,6 @@
 import { getUrl } from 'aws-amplify/storage';
 import { useEffect, useState } from 'react';
-import { Box, Typography, Button, Alert } from '@mui/material';
+import { Box, Typography, Button, Alert, CircularProgress } from '@mui/material';
 import awsconfig from '../aws-exports';  // Import the Amplify configuration
 
 const bucketName = awsconfig.aws_user_files_s3_bucket;  // Get the bucket name
@@ -63,17 +63,20 @@ const DownloadSection = ({ filename, onFileReady }) => {
             target="_blank"
             rel="noopener noreferrer"
           >
-            Download Remidiated {filename}
+            Download Remediated {filename}
           </Button>
         </>
       ) : (
-        <>{/* Important Note */}
-        <Alert severity="info" sx={{ marginBottom: 2 }}>
-        Note: Processing may take up to 2–10 minutes for files around 10–20 pages. Please be patient.
-        </Alert>
-        <Typography variant="body1" color="textSecondary">
-          Remidiating the PDF...
-        </Typography>
+        <>
+          <Alert severity="info" sx={{ marginBottom: 2 }}>
+            Note: Processing may take 3–15 minutes for files around 1–20 pages. Please be patient.
+          </Alert>
+          <Typography variant="body1" color="textSecondary" gutterBottom>
+            Remediating the PDF...
+          </Typography>
+        
+          <CircularProgress color="primary" size={60} sx={{ marginTop: 2 }} />
+
         </>
       )}
     </Box>

@@ -11,6 +11,14 @@ const UploadSection = ({ onUploadComplete }) => {
         acceptedFileTypes={['.pdf']}
         path="pdf/"  // Upload files to the 'pdf/' path in S3
         maxFileCount={1}  // Allow only one file upload at a time
+        displayText={{
+          // some text are plain strings
+          dropFilesText: 'Drop files here',
+          browseFilesText: 'Browse files',
+          // others are functions that take an argument
+          getFilesUploadedText(count) {
+            return `${count} images uploaded`;
+          },}}
         onUploadSuccess={({ key }) => {
           // Inline removal of the 'pdf/' prefix from the key
           const cleanedKey = key.replace('pdf/', '');

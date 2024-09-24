@@ -1,8 +1,16 @@
-import React from 'react';
-import { Drawer, List, ListItem, ListItemText, Box, Typography } from '@mui/material';
-import ElapsedTimer from './ElapsedTimer';  // Import the ElapsedTimer component
+import React, { useState } from 'react';
+import { Drawer, List, Box, Typography, Accordion, AccordionSummary, AccordionDetails } from '@mui/material';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';  // For expanding arrow icon
 import UpdateAdobeAPICredentials from './UpdateAdobeAPICredentials';
-const LeftNav = ({ uploadedAt, isFileReady }) => {
+
+const LeftNav = () => {
+  // Accordion state to control expanded/collapsed
+  const [expanded, setExpanded] = useState(false);
+
+  const handleAccordionChange = () => {
+    setExpanded(!expanded);
+  };
+
   return (
     <Drawer
       variant="permanent"
@@ -18,15 +26,20 @@ const LeftNav = ({ uploadedAt, isFileReady }) => {
         </Typography>
       </Box>
       <List>
-        <ListItem button={"true"}>  {/* Ensure button is a boolean */}
-          <UpdateAdobeAPICredentials/>
-        </ListItem>
+        {/* Accordion for Adobe API Credentials Update */}
+        <Accordion expanded={expanded} onChange={handleAccordionChange}>
+          <AccordionSummary
+            expandIcon={<ExpandMoreIcon />}  // Arrow icon for expanding/collapsing
+            aria-controls="panel1a-content"
+            id="panel1a-header"
+          >
+            <Typography>Update Adobe API Credentials</Typography>
+          </AccordionSummary>
+          <AccordionDetails>
+            <UpdateAdobeAPICredentials />
+          </AccordionDetails>
+        </Accordion>
       </List>
-
-      {/* Timer Section */}
-      <Box sx={{ padding: 2 }}>
-        <ElapsedTimer isFileReady={isFileReady} uploadedAt={uploadedAt} />
-      </Box>
     </Drawer>
   );
 };
