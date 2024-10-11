@@ -12,8 +12,12 @@
       "AmplifyAppId": "dkcmqq1r1kho2"
     },
     "categories": {
+      "auth": {
+        "userPoolGroups": {},
+        "pdfui0ad8bec3": {}
+      },
       "storage": {
-        "pdfuib06b8d5d": {
+        "pdfui88ae970f": {
           "bucketName": "pdfaccessibility-pdfaccessibilitybucket149b7021e-wurx8blwem2d",
           "region": "us-east-1"
         }
