@@ -12,9 +12,6 @@
       "AmplifyAppId": "dkcmqq1r1kho2"
     },
     "categories": {
-      "auth": {
-        "pdfui5246a75d": {}
-      },
       "storage": {
         "pdfuib06b8d5d": {
           "bucketName": "pdfaccessibility-pdfaccessibilitybucket149b7021e-wurx8blwem2d",

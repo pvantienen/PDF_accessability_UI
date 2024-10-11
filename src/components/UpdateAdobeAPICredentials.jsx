@@ -17,41 +17,38 @@ const UpdateAdobeAPICredentials = () => {
 
   const handleUpdate = async () => {
     setErrorMessage('');
-    
+
     const payload = {
-        client_id: clientId,
-        client_secret: clientSecret
+      client_id: clientId,
+      client_secret: clientSecret,
     };
 
     const apiUrl = process.env.REACT_APP_API_GATEWAY_INVOKE_URL;
 
     try {
-        setLoading(true);
-        const response = await fetch(apiUrl, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(payload),
-        });
+      setLoading(true);
+      const response = await fetch(apiUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+      });
 
-        // Since CORS allows access to response, handle it correctly
-        if (!response.ok) {
-            const errorText = await response.text(); // Get error message from the server
-            throw new Error(`Failed to update credentials: ${errorText}`);
-        }
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Failed to update credentials: ${errorText}`);
+      }
 
-        const result = await response.json();
-        alert('Credentials successfully updated in AWS Secrets Manager!');
-        
+      alert('Credentials successfully updated in AWS Secrets Manager!');
     } catch (error) {
-        console.error('Error:', error);
-        setErrorMessage('Failed to update credentials: ' + error.message);
+      console.error('Error:', error);
+      setErrorMessage('Failed to update credentials: ' + error.message);
     } finally {
-        setLoading(false);
+      setLoading(false);
     }
   };
-  
+
   const handleFocus = (e) => {
     e.target.removeAttribute('readonly');
   };
@@ -64,51 +61,47 @@ const UpdateAdobeAPICredentials = () => {
         textAlign: 'center',
         padding: '20px',
       }}
+      role="form"
+      aria-labelledby="form-title"
     >
-      <Typography variant="h6" gutterBottom>
+      <Typography variant="h6" gutterBottom id="form-title">
         Adobe API Credentials
       </Typography>
 
-      {/* Link to Adobe Credentials Documentation */}
       <Link
         href="https://acrobatservices.adobe.com/dc-integration-creation-app-cdn/main.html?api=pdf-services-api"
         target="_blank"
         rel="noopener"
         sx={{ display: 'block', marginBottom: 2 }}
+        aria-label="Link to Adobe API credentials and usage documentation"
       >
         Click here to get Adobe API credentials and usage
       </Link>
 
-      <form autoComplete="off">
-        {/* Hidden dummy inputs to absorb autofill */}
-        <input
-          type="text"
-          name="fakeUsername"
-          style={{ display: 'none' }}
-        />
-        <input
-          type="password"
-          name="fakePassword"
-          style={{ display: 'none' }}
-        />
-
+      <form autoComplete="off" aria-labelledby="form-title">
         {showFields && (
           <>
+            <label htmlFor="client-id" className="visually-hidden">Client ID</label>
             <TextField
               label="Client ID"
+              id="client-id"
               name="clientIdField"
               value={clientId}
               onChange={(e) => setClientId(e.target.value)}
               fullWidth
-              autoComplete="nope"
+              autoComplete="off"
               onFocus={handleFocus}
               InputProps={{
                 readOnly: true,
               }}
               sx={{ marginBottom: 2 }}
+              aria-required="true"
             />
+
+            <label htmlFor="client-secret" className="visually-hidden">Client Secret</label>
             <TextField
               label="Client Secret"
+              id="client-secret"
               name="clientSecretField"
               value={clientSecret}
               onChange={(e) => setClientSecret(e.target.value)}
@@ -118,6 +111,7 @@ const UpdateAdobeAPICredentials = () => {
                 readOnly: true,
               }}
               sx={{ marginBottom: 2 }}
+              aria-required="true"
             />
           </>
         )}
@@ -127,6 +121,8 @@ const UpdateAdobeAPICredentials = () => {
             variant="body2"
             color="error"
             sx={{ marginBottom: 2 }}
+            role="alert"
+            aria-live="assertive"
           >
             {errorMessage}
           </Typography>
@@ -137,6 +133,7 @@ const UpdateAdobeAPICredentials = () => {
           color="primary"
           onClick={handleUpdate}
           disabled={!clientId || !clientSecret || loading}
+          aria-label="Update Adobe API Credentials"
         >
           {loading ? 'Updating...' : 'Update'}
         </Button>

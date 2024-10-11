@@ -8,7 +8,7 @@ import ElapsedTimer from './components/ElapsedTimer'; // Import the ElapsedTimer
 import { ThemeProvider } from '@mui/material/styles';
 import theme from './theme'; // Import the theme
 import { withAuthenticator } from '@aws-amplify/ui-react'; // AWS Amplify Authenticator
-
+import QueryCloudwatch from './components/QueryCloudwatch';
 function App() {
   const [uploadedFileName, setUploadedFileName] = useState(''); // Track uploaded file name
   const [uploadedAt, setUploadedAt] = useState(null); // Track when the file was uploaded
@@ -75,7 +75,6 @@ function App() {
             >
               <ElapsedTimer uploadedAt={uploadedAt} isFileReady={isFileReady} />
             </Box>
-
             {/* Display Download Section when file is uploaded */}
             {uploadedFileName && (
               <Box
@@ -88,6 +87,7 @@ function App() {
                   marginTop: 4,
                 }}
               >
+                {/* <QueryCloudwatch /> */}
                 {/* Show download options when file is ready */}
                 <DownloadSection filename={uploadedFileName} onFileReady={handleFileReady} />
               </Box>
@@ -98,5 +98,5 @@ function App() {
     </ThemeProvider>
   );
 }
-
-export default withAuthenticator(App); // Wrap the app with AWS Amplify Authenticator
+export default withAuthenticator(App);
+// export default withAuthenticator(App); // Wrap the app with AWS Amplify Authenticator

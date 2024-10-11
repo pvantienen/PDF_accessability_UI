@@ -12,15 +12,14 @@ const UploadSection = ({ onUploadComplete }) => {
         path="pdf/"  // Upload files to the 'pdf/' path in S3
         maxFileCount={1}  // Allow only one file upload at a time
         displayText={{
-          // some text are plain strings
           dropFilesText: 'Drop files here',
           browseFilesText: 'Browse files',
-          // others are functions that take an argument
           getFilesUploadedText(count) {
-            return `${count} images uploaded`;
-          },}}
+            return `${count} PDF files uploaded`;
+          },
+        }}
+        aria-label="File uploader for PDF documents" // Accessible label for screen readers
         onUploadSuccess={({ key }) => {
-          // Inline removal of the 'pdf/' prefix from the key
           const cleanedKey = key.replace('pdf/', '');
 
           console.log('Upload successful, file key:', cleanedKey);
