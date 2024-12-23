@@ -71,6 +71,8 @@ export class CdkBackendStack extends cdk.Stack {
       stage: 'PRODUCTION'
     });
 
+    const appUrl = `https://${mainBranch.branchName}.${amplifyApp.defaultDomain}`;
+
     const userPool = new cognito.UserPool(this, 'PDF-Accessability-User-Pool', {
       userPoolName: 'PDF-Accessability-User-Pool',
 
@@ -152,10 +154,10 @@ export class CdkBackendStack extends cdk.Stack {
         ],
         // Redirect to your Amplify app after sign-in and sign-out
         callbackUrls: [
-          'https://main.d1zl0fpln5b8oq.amplifyapp.com/',
+          appUrl,
         ],
         logoutUrls: [
-          'https://main.d1zl0fpln5b8oq.amplifyapp.com/',
+        appUrl,
         ],
       },
       // Typically you don't want "generateSecret: true" for web-based clients
@@ -169,7 +171,7 @@ export class CdkBackendStack extends cdk.Stack {
     });
 
 
-    const abcd = new cognito.CfnManagedLoginBranding(this, 'MyManagedLoginBranding', {
+    const managed_login = new cognito.CfnManagedLoginBranding(this, 'MyManagedLoginBranding', {
       userPoolId: userPool.userPoolId,
       clientId: userPoolClient.userPoolClientId,
 
@@ -198,8 +200,9 @@ export class CdkBackendStack extends cdk.Stack {
       value: userPoolDomain.domain
     });
     new cdk.CfnOutput(this, 'AmplifyAppURL', {
-      value: amplifyApp.defaultDomain,
-      description: 'Amplify App URL'
+      value: `https://${mainBranch.branchName}.${amplifyApp.defaultDomain}`,
+      description: 'Amplify Application URL'
     });
+
   }
 }
