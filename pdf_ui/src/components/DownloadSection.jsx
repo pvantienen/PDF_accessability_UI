@@ -5,9 +5,8 @@ import { Button } from '@aws-amplify/ui-react';
 import '@aws-amplify/ui-react/styles.css';
 
 // import awsconfig from '../aws-exports';  // Import the Amplify configuration
-
-const bucketName = awsconfig.aws_user_files_s3_bucket;  // Get the bucket name
-
+const bucketName = process.env.REACT_APP_BUCKET_NAME;
+const region = process.env.REACT_APP_BUCKET_REGION;
 const DownloadSection = ({ filename, onFileReady }) => {
   const [downloadUrl, setDownloadUrl] = useState('');
   const [isFileReady, setIsFileReady] = useState(false);
@@ -25,7 +24,7 @@ const DownloadSection = ({ filename, onFileReady }) => {
           options: {
             bucket: {
               bucketName: bucketName,
-              region: 'us-east-1',
+              region: region,
             },
             validateObjectExistence: true,
             expiresIn: 300,

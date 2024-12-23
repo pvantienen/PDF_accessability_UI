@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Drawer, List, Box, Typography, Accordion, AccordionSummary, AccordionDetails } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';  // For expanding arrow icon
-import UpdateAdobeAPICredentials from './UpdateAdobeAPICredentials';
+// import UpdateAdobeAPICredentials from './UpdateAdobeAPICredentials';
 import PacChecker from './PacChecker';  // Import the PAC Accessibility component
 
 const LeftNav = () => {
@@ -28,7 +28,7 @@ const LeftNav = () => {
       </Box>
       <List>
         {/* Accordion for Adobe API Credentials Update */}
-        <Accordion expanded={expanded.adobe} onChange={() => handleAccordionChange('adobe')}>
+        {/* <Accordion expanded={expanded.adobe} onChange={() => handleAccordionChange('adobe')}>
           <AccordionSummary
             expandIcon={<ExpandMoreIcon />}
             aria-controls="panel1a-content"
@@ -39,7 +39,7 @@ const LeftNav = () => {
           <AccordionDetails>
             <UpdateAdobeAPICredentials />
           </AccordionDetails>
-        </Accordion>
+        </Accordion> */}
         {/* Accordion for PAC Accessibility */}
         <Accordion expanded={expanded.pac} onChange={() => handleAccordionChange('pac')}>
           <AccordionSummary

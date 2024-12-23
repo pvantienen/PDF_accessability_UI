@@ -70,6 +70,8 @@ export class CdkBackendStack extends cdk.Stack {
       stage: 'PRODUCTION'
     });
 
+    mainBranch.addEnvironment('REACT_APP_BUCKET_NAME', bucket.bucketName);
+    mainBranch.addEnvironment('REACT_APP_BUCKET_REGION', this.region);
     // Grant Amplify permission to read the secret
     githubToken_secret_manager.grantRead(amplifyApp);
 
