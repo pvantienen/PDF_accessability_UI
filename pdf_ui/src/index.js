@@ -7,7 +7,15 @@ import {Amplify} from 'aws-amplify';
 // import awsExports from './aws-exports';
 
 // Amplify.configure(awsExports);
-
+Amplify.configure({
+  Storage: {
+    AWSS3: {
+      bucket: process.env.REACT_APP_BUCKET_NAME,
+      region: process.env.REACT_APP_BUCKET_REGION,
+    }
+  }
+  // using Cognito later, add Auth config here
+});
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(
   // <React.StrictMode>
