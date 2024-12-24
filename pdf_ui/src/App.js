@@ -185,7 +185,11 @@ function App() {
               }>Sign Out (Local)</button>
               &nbsp;&nbsp;
               <button onClick={signOutRedirect}>Sign Out (Redirect)</button>
-              <button onClick={() => auth.signoutRedirect()}>Sign Out (2)</button>
+              <button onClick={() => auth.signoutRedirect({                
+                post_logout_redirect_uri: "https://main.d3tdsepn39r5l1.amplifyapp.com",
+                client_id:"2r4vl1l7nmkn0u7bmne4c3tve5"
+                })}
+                >Sign Out (2)</button>
             </Box>
           </Container>
         </Box>
