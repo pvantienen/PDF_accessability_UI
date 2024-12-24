@@ -1,0 +1,228 @@
+// src/MainApp.js
+import React, { useState, useEffect } from 'react';
+import { useAuth } from 'react-oidc-context';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { Container, Box, Typography } from '@mui/material';
+import { ThemeProvider } from '@mui/material/styles';
+import Header from './components/Header';
+import UploadSection from './components/UploadSection';
+import DownloadSection from './components/DownloadSection';
+import LeftNav from './components/LeftNav';
+import ElapsedTimer from './components/ElapsedTimer';
+import theme from './theme';
+
+// Import the CustomCredentialsProvider
+import CustomCredentialsProvider from './utilities/CustomCredentialsProvider';
+
+function MainApp({ isLoggingOut, setIsLoggingOut }) {
+  const auth = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
+  
+  // Store AWS credentials & upload states
+  const [awsCredentials, setAwsCredentials] = useState(null);
+  const [uploadedFileName, setUploadedFileName] = useState('');
+  const [uploadedAt, setUploadedAt] = useState(null);
+  const [isFileReady, setIsFileReady] = useState(false);
+
+  // Fetch credentials once user is authenticated
+  useEffect(() => {
+    if (auth.isAuthenticated) {
+      (async () => {
+        try {
+          const token = auth.user?.id_token;
+          const domain = 'cognito-idp.us-east-1.amazonaws.com/us-east-1_3uP3RsAjc';
+
+          const customCredentialsProvider = new CustomCredentialsProvider();
+          customCredentialsProvider.loadFederatedLogin({ domain, token });
+
+          const { credentials: c, identityId } =
+            await customCredentialsProvider.getCredentialsAndIdentityId();
+
+          setAwsCredentials({
+            accessKeyId: c.accessKeyId,
+            secretAccessKey: c.secretAccessKey,
+            sessionToken: c.sessionToken,
+          });
+
+          const idToken = auth.user?.id_token;
+          const accessToken = auth.user?.access_token;
+          const refreshToken = auth.user?.refresh_token;
+
+          // Debug logs
+          console.log('[DEBUG] Access Key:', c.accessKeyId);
+          console.log('[DEBUG] Secret Key:', c.secretAccessKey);
+          console.log('[DEBUG] Session Token:', c.sessionToken);
+          console.log('[DEBUG] Identity ID:', identityId);
+          console.log('[DEBUG] ID Token:', idToken);
+          console.log('[DEBUG] Access Token:', accessToken);
+          console.log('[DEBUG] Refresh Token:', refreshToken);
+          
+          if (idToken) {
+            // Store ID token in localStorage so LogoutPage can access it
+            localStorage.setItem('id_token', idToken);
+          }
+
+        } catch (error) {
+          console.error('Error fetching Cognito credentials:', error);
+        }
+      })();
+    }
+  }, [auth.isAuthenticated, auth.user]);
+
+  // Handle events from child components
+  const handleUploadComplete = (fileName) => {
+    console.log('Upload completed, file name:', fileName);
+    setUploadedFileName(fileName);
+    setUploadedAt(Date.now());
+    setIsFileReady(false);
+  };
+
+  const handleFileReady = () => {
+    // When the DownloadSection confirms file is ready
+    setIsFileReady(true);
+  };
+
+  const handleSignOut = async () => {
+    try {
+      // First remove the local user
+      await auth.removeUser();
+      
+      setIsLoggingOut(true); // Update logout state
+      navigate('/logout');    // Navigate to logout page
+      // The actual signoutRedirect is handled in LogoutPage
+    } catch (error) {
+      console.error('Error during sign out:', error);
+      setIsLoggingOut(false); // Reset logout state in case of error
+    }
+  };
+
+  if (auth.isLoading) {
+    return <div>Loading...</div>;
+  }
+
+  if (auth.error) {
+    // If you want to specifically check if error.message includes 'No matching state found in storage'
+    if (auth.error.message.includes('No matching state found')) {
+      console.log('Detected invalid or mismatched OIDC state. Redirecting to login...');
+      auth.removeUser().then(() => {
+        auth.signinRedirect(); // Force re-auth
+      });
+      return null; // Avoid rendering the main app
+    }
+    // If it's some other error, you can display or handle it
+    return <div>Encountered error: {auth.error.message}</div>;
+  }
+
+  if (
+    !auth.isAuthenticated && 
+    location.pathname !== '/logout' && 
+    !location.pathname.includes('logout') && 
+    !isLoggingOut
+  ) {
+    // If user is not authenticated and not on /logout and not logging out, force login
+    auth.signinRedirect();
+    return null;
+  }
+
+  return (
+    <ThemeProvider theme={theme}>
+      <Box sx={{ display: 'flex', minHeight: '100vh' }}>
+        <LeftNav />
+
+        <Box sx={{ flexGrow: 1, padding: 3, backgroundColor: '#f4f6f8' }}>
+          <Header />
+
+          <Container maxWidth="lg" sx={{ marginTop: 4 }}>
+            {/* Upload Section */}
+            <Box
+              sx={{
+                textAlign: 'center',
+                padding: 4,
+                border: '1px dashed gray',
+                borderRadius: '12px',
+                marginBottom: 4,
+                backgroundColor: '#fff',
+                boxShadow: '0px 2px 10px rgba(0,0,0,0.1)',
+              }}
+            >
+              <Typography variant="h5" gutterBottom>
+                Upload PDF
+              </Typography>
+              <Typography
+                variant="body1"
+                color="textSecondary"
+                sx={{ marginBottom: 2 }}
+              >
+                Drag & drop your PDF file below, or click to select it.
+              </Typography>
+
+              {/* Pass down awsCredentials to our custom UploadSection */}
+              <UploadSection
+                onUploadComplete={handleUploadComplete}
+                awsCredentials={awsCredentials}
+              />
+            </Box>
+
+            {/* Elapsed Timer */}
+            <Box
+              sx={{
+                textAlign: 'center',
+                padding: 4,
+                borderRadius: '12px',
+                backgroundColor: '#fff',
+                boxShadow: '0px 2px 10px rgba(0,0,0,0.1)',
+                marginBottom: 4,
+              }}
+            >
+              <ElapsedTimer uploadedAt={uploadedAt} isFileReady={isFileReady} />
+            </Box>
+
+            {/* Download Section */}
+            {uploadedFileName && (
+              <Box
+                sx={{
+                  textAlign: 'center',
+                  padding: 4,
+                  borderRadius: '12px',
+                  backgroundColor: '#fff',
+                  boxShadow: '0px 2px 10px rgba(0,0,0,0.1)',
+                  marginTop: 4,
+                }}
+              >
+                <DownloadSection
+                  filename={uploadedFileName}
+                  onFileReady={handleFileReady}
+                  awsCredentials={awsCredentials}
+                />
+              </Box>
+            )}
+
+            {/* Sign Out Buttons */}
+            <Box sx={{ marginTop: 4, textAlign: 'center' }}>
+              <button onClick={() => auth.removeUser()}>
+                Sign Out (Local)
+              </button>
+              &nbsp;&nbsp;
+              <button onClick={handleSignOut}>Sign Out (New)</button>
+              &nbsp;&nbsp;
+              <button
+                onClick={() =>
+                  auth.signoutRedirect({
+                    post_logout_redirect_uri:
+                      'https://main.d3tdsepn39r5l1.amplifyapp.com/logout',
+                    client_id: '2r4vl1l7nmkn0u7bmne4c3tve5',
+                  })
+                }
+              >
+                Sign Out (2)
+              </button>
+            </Box>
+          </Container>
+        </Box>
+      </Box>
+    </ThemeProvider>
+  );
+}
+
+export default MainApp;
