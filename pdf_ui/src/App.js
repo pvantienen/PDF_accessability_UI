@@ -9,20 +9,20 @@ import ElapsedTimer from './components/ElapsedTimer';
 import { ThemeProvider } from '@mui/material/styles';
 import theme from './theme';
 
-
 // 1) Import the CustomCredentialsProvider
 import CustomCredentialsProvider from './utilities/CustomCredentialsProvider';
 
 function App() {
   const auth = useAuth();
+
+  // Store AWS credentials & upload states
   const [awsCredentials, setAwsCredentials] = useState(null);
   const [uploadedFileName, setUploadedFileName] = useState('');
   const [uploadedAt, setUploadedAt] = useState(null);
   const [isFileReady, setIsFileReady] = useState(false);
-  
-  // 2) Unconditional useEffect
+
+  // 2) Fetch credentials once user is authenticated
   useEffect(() => {
-    // We only want to fetch credentials if the user is authenticated
     if (auth.isAuthenticated) {
       (async () => {
         try {
@@ -35,7 +35,8 @@ function App() {
           customCredentialsProvider.loadFederatedLogin({ domain, token });
 
           // Extract the nested credentials object
-          const { credentials: c, identityId } = await customCredentialsProvider.getCredentialsAndIdentityId();
+          const { credentials: c, identityId } =
+            await customCredentialsProvider.getCredentialsAndIdentityId();
 
           setAwsCredentials({
             accessKeyId: c.accessKeyId,
@@ -43,13 +44,12 @@ function App() {
             sessionToken: c.sessionToken,
           });
 
-          // Just to confirm
+          // Debug logs
           console.log('[DEBUG] Access Key:', c.accessKeyId);
           console.log('[DEBUG] Secret Key:', c.secretAccessKey);
           console.log('[DEBUG] Session Token:', c.sessionToken);
           console.log('[DEBUG] Identity ID:', identityId);
 
-        
         } catch (error) {
           console.error('Error fetching Cognito credentials:', error);
         }
@@ -57,20 +57,19 @@ function App() {
     }
   }, [auth.isAuthenticated, auth.user]);
 
-  // 3) Now do your gating/conditional returns AFTER the effect is declared
+  // 3) Gating/conditional returns
   if (auth.isLoading) {
     return <div>Loading...</div>;
   }
-
   if (auth.error) {
     return <div>Encountered error: {auth.error.message}</div>;
   }
-
   if (!auth.isAuthenticated) {
     auth.signinRedirect();
     return null;
   }
 
+  // Handle events from child components
   const handleUploadComplete = (fileName) => {
     console.log('Upload completed, file name:', fileName);
     setUploadedFileName(fileName);
@@ -79,6 +78,7 @@ function App() {
   };
 
   const handleFileReady = () => {
+    // When the DownloadSection confirms file is ready
     setIsFileReady(true);
   };
 
@@ -99,7 +99,8 @@ function App() {
           <Header />
 
           <Container maxWidth="lg" sx={{ marginTop: 4 }}>
-          <Box
+            {/* Upload Section */}
+            <Box
               sx={{
                 textAlign: 'center',
                 padding: 4,
@@ -113,14 +114,22 @@ function App() {
               <Typography variant="h5" gutterBottom>
                 Upload PDF
               </Typography>
-              <Typography variant="body1" color="textSecondary" sx={{ marginBottom: 2 }}>
+              <Typography
+                variant="body1"
+                color="textSecondary"
+                sx={{ marginBottom: 2 }}
+              >
                 Drag & drop your PDF file below, or click to select it.
               </Typography>
 
-              {/* Our new custom UploadSection */}
-              <UploadSection onUploadComplete={handleUploadComplete} awsCredentials={awsCredentials}  />
+              {/* Pass down awsCredentials to our custom UploadSection */}
+              <UploadSection
+                onUploadComplete={handleUploadComplete}
+                awsCredentials={awsCredentials}
+              />
             </Box>
 
+            {/* Elapsed Timer */}
             <Box
               sx={{
                 textAlign: 'center',
@@ -131,9 +140,13 @@ function App() {
                 marginBottom: 4,
               }}
             >
-              <ElapsedTimer uploadedAt={uploadedAt} isFileReady={isFileReady} />
+              <ElapsedTimer
+                uploadedAt={uploadedAt}
+                isFileReady={isFileReady}
+              />
             </Box>
 
+            {/* Download Section */}
             {uploadedFileName && (
               <Box
                 sx={{
@@ -145,10 +158,16 @@ function App() {
                   marginTop: 4,
                 }}
               >
-                <DownloadSection filename={uploadedFileName} onFileReady={handleFileReady} />
+                {/* Pass awsCredentials here too if needed for the new approach */}
+                <DownloadSection
+                  filename={uploadedFileName}
+                  onFileReady={handleFileReady}
+                  awsCredentials={awsCredentials}
+                />
               </Box>
             )}
 
+            {/* Sign Out Buttons */}
             <Box sx={{ marginTop: 4, textAlign: 'center' }}>
               <button onClick={() => auth.removeUser()}>Sign Out (Local)</button>
               &nbsp;&nbsp;
