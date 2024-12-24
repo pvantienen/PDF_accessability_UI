@@ -22,18 +22,18 @@ function LogoutPage() {
       )}&id_token_hint=${idToken}`;
 
       // Use fetch instead of window.href
-      fetch(signoutUrl, {
-        method: 'GET',
-        // If you want to handle or inspect the redirect response:
-        // redirect: 'follow'
-      })
-        .then((response) => {
-          // Depending on your Cognito config, you may or may not get an HTTP 200 here
-          console.log('Logout fetch completed. Response:', response);
-        })
-        .catch((error) => {
-          console.error('Logout fetch error:', error);
-        });
+      // fetch(signoutUrl, {
+      //   method: 'GET',
+      //   // If you want to handle or inspect the redirect response:
+      //   // redirect: 'follow'
+      // })
+      //   .then((response) => {
+      //     // Depending on your Cognito config, you may or may not get an HTTP 200 here
+      //     console.log('Logout fetch completed. Response:', response);
+      //   })
+      //   .catch((error) => {
+      //     console.error('Logout fetch error:', error);
+      //   });
     }
   }, []);
 
