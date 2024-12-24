@@ -62,6 +62,15 @@ function App() {
     return <div>Loading...</div>;
   }
   if (auth.error) {
+    // If you want to specifically check if error.message includes 'No matching state found in storage'
+    if (auth.error.message.includes('No matching state found')) {
+      console.log('Detected invalid or mismatched OIDC state. Redirecting to login...');
+      auth.removeUser().then(() => {
+        auth.signinRedirect(); // Force re-auth
+      });
+      return null; // Avoid rendering the main app
+    }
+    // If it's some other error, you can display or handle it
     return <div>Encountered error: {auth.error.message}</div>;
   }
   if (!auth.isAuthenticated) {
