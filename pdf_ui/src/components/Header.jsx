@@ -7,24 +7,24 @@ function Header() {
 
   const handleSignOut = async () => {
     try {
-      // Remove user from local session
+      // 1) Remove local user session
       await auth.removeUser();
 
-      // Option 1: Immediately redirect to your login page
-      // If your app automatically intercepts unauthenticated
-      // users and calls auth.signinRedirect(), this might be enough:
-      auth.signinRedirect();
+      // 2) Build Cognito logout URL
+      // Make sure this logoutUri is registered in Cognito App Client -> Sign out URLs
+      const clientId = '2r4vl1l7nmkn0u7bmne4c3tve5';
+      const cognitoDomain = 'https://pdf-ui-auth.auth.us-east-1.amazoncognito.com';
+      const logoutUri = 'https://main.d3tdsepn39r5l1.amplifyapp.com/logout'; 
+        // or some custom route in your app
 
-      // Option 2: If you want to sign out from Cognito fully, do:
-      // const clientId = '2r4vl1l7nmkn0u7bmne4c3tve5';
-      // const logoutUri = 'https://main.d3tdsepn39r5l1.amplifyapp.com'; // or your login page
-      // const cognitoDomain = 'https://pdf-ui-auth.auth.us-east-1.amazoncognito.com';
-      // window.location.href = `${cognitoDomain}/logout?client_id=${clientId}&logout_uri=${encodeURIComponent(logoutUri)}`;
-
+      // 3) Redirect to Cognito's logout page to kill the IdP session
+      window.location.href = `${cognitoDomain}/logout?client_id=${clientId}&logout_uri=${encodeURIComponent(logoutUri)}`;
+      await auth.removeUser();
     } catch (error) {
       console.error('Error during sign out:', error);
     }
   };
+
   return (
   <AppBar position="static" color="default" role="banner" aria-label="Application Header">
     <Toolbar>

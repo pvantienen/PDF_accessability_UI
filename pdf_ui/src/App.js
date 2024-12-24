@@ -95,7 +95,7 @@ function App() {
     const clientId = '2r4vl1l7nmkn0u7bmne4c3tve5'; 
     const logoutUri = 'https://main.d3tdsepn39r5l1.amplifyapp.com';
     const cognitoDomain = 'https://pdf-ui-auth.auth.us-east-1.amazoncognito.com';
-    auth.removeUser()
+    // auth.removeUser()
     window.location.href = `${cognitoDomain}/logout?client_id=${clientId}&logout_uri=${encodeURIComponent(logoutUri)}`;
   };
 
