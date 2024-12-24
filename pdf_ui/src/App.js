@@ -10,7 +10,7 @@ import DownloadSection from './components/DownloadSection';
 import LeftNav from './components/LeftNav';
 import ElapsedTimer from './components/ElapsedTimer';
 import LogoutPage from './components/LogoutPage';  // <-- import our new component
-
+import { useLocation } from 'react-router-dom';
 import theme from './theme';
 
 // 1) Import the CustomCredentialsProvider
@@ -19,6 +19,7 @@ import CustomCredentialsProvider from './utilities/CustomCredentialsProvider';
 function MainApp() {
   const auth = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   // Store AWS credentials & upload states
   const [awsCredentials, setAwsCredentials] = useState(null);
   const [uploadedFileName, setUploadedFileName] = useState('');
@@ -121,7 +122,7 @@ function MainApp() {
     return <div>Encountered error: {auth.error.message}</div>;
   }
 
-  if (!auth.isAuthenticated) {
+  if (!auth.isAuthenticated && location.pathname !== '/logout') {
     // If user is not authenticated, force login
     auth.signinRedirect();
     return null;
