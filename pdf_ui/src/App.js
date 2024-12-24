@@ -3,7 +3,7 @@ import { useAuth } from 'react-oidc-context';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { Container, Box, Typography } from '@mui/material';
 import { ThemeProvider } from '@mui/material/styles';
-
+import { useNavigate } from 'react-router-dom';
 import Header from './components/Header';
 import UploadSection from './components/UploadSection';
 import DownloadSection from './components/DownloadSection';
@@ -18,7 +18,7 @@ import CustomCredentialsProvider from './utilities/CustomCredentialsProvider';
 
 function MainApp() {
   const auth = useAuth();
-
+  const navigate = useNavigate();
   // Store AWS credentials & upload states
   const [awsCredentials, setAwsCredentials] = useState(null);
   const [uploadedFileName, setUploadedFileName] = useState('');
@@ -47,7 +47,7 @@ function MainApp() {
             secretAccessKey: c.secretAccessKey,
             sessionToken: c.sessionToken,
           });
-          
+
           const idToken = auth.user?.id_token; // ID Token
           const accessToken = auth.user?.access_token; // Access Token
           const refreshToken = auth.user?.refresh_token; // Refresh Token (if applicable)
@@ -60,6 +60,10 @@ function MainApp() {
           console.log('[DEBUG] ID Token:', idToken);
           console.log('[DEBUG] Access Token:', accessToken);
           console.log('[DEBUG] Refresh Token:', refreshToken);
+          if (idToken) {
+            // Store ID token in localStorage so LogoutPage can access it
+            localStorage.setItem('id_token', idToken);
+          }
 
         } catch (error) {
           console.error('Error fetching Cognito credentials:', error);
@@ -85,16 +89,16 @@ function MainApp() {
     try {
       // First remove the local user
       await auth.removeUser();
-      
+      navigate('/logout');
       // Then redirect to Cognito logout
-      const cognitoDomain = 'https://pdf-ui-auth.auth.us-east-1.amazoncognito.com';
-      const clientId = '2r4vl1l7nmkn0u7bmne4c3tve5';
+      // const cognitoDomain = 'https://pdf-ui-auth.auth.us-east-1.amazoncognito.com';
+      // const clientId = '2r4vl1l7nmkn0u7bmne4c3tve5';
       
-      // IMPORTANT: Make sure this URL is allowed in your Cognito "Sign out URL(s)".
-      // If you want to redirect to /logout in your app, then Cognito must allow it.
-      const logoutUri = encodeURIComponent('https://main.d3tdsepn39r5l1.amplifyapp.com/logout');
+      // // IMPORTANT: Make sure this URL is allowed in your Cognito "Sign out URL(s)".
+      // // If you want to redirect to /logout in your app, then Cognito must allow it.
+      // const logoutUri = encodeURIComponent('https://main.d3tdsepn39r5l1.amplifyapp.com/logout');
       
-      window.location.href = `${cognitoDomain}/logout?client_id=${clientId}&logout_uri=${logoutUri}`;
+      // window.location.href = `${cognitoDomain}/logout?client_id=${clientId}&logout_uri=${logoutUri}`;
     } catch (error) {
       console.error('Error during sign out:', error);
     }
