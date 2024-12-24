@@ -3,10 +3,10 @@ import React from 'react';
 import { AppBar, Toolbar, Typography, Button, Box } from '@mui/material';
 import { useAuth } from 'react-oidc-context';
 import PropTypes from 'prop-types';
-
+import {HEADER_BACKGROUND} from '../utilities/constants';
 function Header({ handleSignOut }) {
   return (
-    <AppBar position="static" color="primary" role="banner" aria-label="Application Header">
+    <AppBar position="static" color= {HEADER_BACKGROUND} role="banner" aria-label="Application Header">
       <Toolbar>
         <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
           PDF Accessibility

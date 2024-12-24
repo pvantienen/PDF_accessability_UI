@@ -1,22 +1,19 @@
-// UploadSection.js
 import React, { useState } from 'react';
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
+import { Box, Button, Typography, TextField } from '@mui/material';
 
 function UploadSection({ onUploadComplete, awsCredentials }) {
   const [selectedFile, setSelectedFile] = useState(null);
 
-  // Handle <input type="file" /> change
   const handleFileInput = (e) => {
     const file = e.target.files[0];
     if (!file) return;
 
-    // Only allow PDFs
     if (file.type !== 'application/pdf') {
       alert('Only PDF files are allowed.');
       return;
     }
 
-    // Check file size (100 MB = 100 * 1024 * 1024 bytes)
     if (file.size > 100 * 1024 * 1024) {
       alert('File size exceeds 100 MB limit.');
       return;
@@ -25,7 +22,6 @@ function UploadSection({ onUploadComplete, awsCredentials }) {
     setSelectedFile(file);
   };
 
-  // Upload to S3
   const handleUpload = async () => {
     if (!selectedFile) {
       alert('Please select a PDF file before uploading.');
@@ -36,8 +32,6 @@ function UploadSection({ onUploadComplete, awsCredentials }) {
       return;
     }
     try {
-      // Create S3 client
-      console.log('awsCredentials in upload section:', awsCredentials);
       const client = new S3Client({
         region: 'us-east-1',
         credentials: {
@@ -47,21 +41,16 @@ function UploadSection({ onUploadComplete, awsCredentials }) {
         },
       });
 
-      // Prepare the PUT params
       const params = {
         Bucket: 'pdfaccessibility-pdfaccessibilitybucket149b7021e-wurx8blwem2d',
-        Key: `pdf/${selectedFile.name}`, // store it inside pdf/ folder
+        Key: `pdf/${selectedFile.name}`,
         Body: selectedFile,
       };
 
       const command = new PutObjectCommand(params);
-      const data = await client.send(command);
+      await client.send(command);
 
-      console.log('Upload successful:', data);
-      // Notify parent component that upload is complete
       onUploadComplete(selectedFile.name);
-
-      // Reset file state
       setSelectedFile(null);
     } catch (error) {
       console.error('Error uploading file:', error);
@@ -69,18 +58,25 @@ function UploadSection({ onUploadComplete, awsCredentials }) {
   };
 
   return (
-    <div style={{ textAlign: 'center' }}>
-      {/* Only accept PDF */}
-      <input
+    <Box sx={{ textAlign: 'center', padding: '1rem', border: '1px solid #ccc', borderRadius: '8px' }}>
+      <Typography variant="h6" gutterBottom>
+        Upload PDF
+      </Typography>
+      <TextField
         type="file"
         accept=".pdf"
         onChange={handleFileInput}
-        style={{ marginBottom: '1rem' }}
+        inputProps={{ style: { display: 'block', marginBottom: '1rem' } }}
       />
-      <div>
-        <button onClick={handleUpload}>Upload To S3</button>
-      </div>
-    </div>
+      <Button
+        variant="contained"
+        color="primary"
+        onClick={handleUpload}
+        disabled={!selectedFile}
+      >
+        Upload to S3
+      </Button>
+    </Box>
   );
 }
 
