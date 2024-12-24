@@ -34,13 +34,21 @@ function App() {
           const customCredentialsProvider = new CustomCredentialsProvider();
           customCredentialsProvider.loadFederatedLogin({ domain, token });
 
-          const credentials = await customCredentialsProvider.getCredentialsAndIdentityId();
+          // Extract the nested credentials object
+          const { credentials: c, identityId } = await customCredentialsProvider.getCredentialsAndIdentityId();
+
           setAwsCredentials({
-            accessKeyId: credentials.accessKeyId,
-            secretAccessKey: credentials.secretAccessKey,
-            sessionToken: credentials.sessionToken,
+            accessKeyId: c.accessKeyId,
+            secretAccessKey: c.secretAccessKey,
+            sessionToken: c.sessionToken,
           });
-          console.log('[DEBUG] Cognito credentials:', credentials);
+
+          // Just to confirm
+          console.log('[DEBUG] Access Key:', c.accessKeyId);
+          console.log('[DEBUG] Secret Key:', c.secretAccessKey);
+          console.log('[DEBUG] Session Token:', c.sessionToken);
+          console.log('[DEBUG] Identity ID:', identityId);
+
         
         } catch (error) {
           console.error('Error fetching Cognito credentials:', error);

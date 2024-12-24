@@ -43,7 +43,7 @@ function UploadSection({ onUploadComplete, awsCredentials }) {
         credentials: {
           accessKeyId: awsCredentials.accessKeyId,
           secretAccessKey: awsCredentials.secretAccessKey,
-          // sessionToken: awsCredentials.sessionToken,
+          sessionToken: awsCredentials.sessionToken,
         },
       });
 
