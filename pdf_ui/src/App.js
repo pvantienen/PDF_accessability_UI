@@ -99,5 +99,5 @@ function App() {
     </ThemeProvider>
   );
 }
-// export default withAuthenticator(App);
-export default App; // Wrap the app with AWS Amplify Authenticator
+export default withAuthenticator(App);
+// export default App; // Wrap the app with AWS Amplify Authenticator
