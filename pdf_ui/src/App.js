@@ -97,7 +97,7 @@ function App() {
     const cognitoDomain = 'https://pdf-ui-auth.auth.us-east-1.amazoncognito.com';
     
     window.location.href = `${cognitoDomain}/logout?client_id=${clientId}&logout_uri=${encodeURIComponent(logoutUri)}`
-    auth.removeUser();
+    
   };
 
   return (
@@ -184,6 +184,7 @@ function App() {
               }>Sign Out (Local)</button>
               &nbsp;&nbsp;
               <button onClick={signOutRedirect}>Sign Out (Redirect)</button>
+              <button onClick={() => auth.signoutRedirect()}>Sign Out (2)</button>
             </Box>
           </Container>
         </Box>
