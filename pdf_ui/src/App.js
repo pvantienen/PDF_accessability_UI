@@ -11,7 +11,7 @@ const cognitoAuthConfig = {
   authority: "https://cognito-idp.us-east-1.amazonaws.com/us-east-1_3uP3RsAjc",
   client_id: "2r4vl1l7nmkn0u7bmne4c3tve5",
   redirect_uri: "https://main.d3tdsepn39r5l1.amplifyapp.com",
-  post_logout_redirect_uri: "https://main.d3tdsepn39r5l1.amplifyapp.com/logout",
+  post_logout_redirect_uri: "https://google.com",
   response_type: "code",
   scope: "email openid phone profile",
 };
