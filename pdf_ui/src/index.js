@@ -6,6 +6,7 @@ import App from './App';
 import reportWebVitals from './reportWebVitals';
 import { Amplify } from 'aws-amplify';
 import { AuthProvider } from "react-oidc-context";
+import CustomCredentialsProvider from './utilities/CustomCredentialsProvider';
 
 const cognitoAuthConfig = {
   authority: "https://cognito-idp.us-east-1.amazonaws.com/us-east-1_3uP3RsAjc",
@@ -14,6 +15,15 @@ const cognitoAuthConfig = {
   response_type: "code",
   scope: "email openid phone profile",
 };
+// const customCredentialsProvider = new MyOidcCredentialsProvider(cognitoAuthConfig);
+// // const customCredentialsProvider = new CustomCredentialsProvider();
+// Amplify.configure({
+//   Auth: {
+//     // Supply the custom credentials provider to Amplify
+//     credentialsProvider: customCredentialsProvider
+//   },
+// });
+
 Amplify.configure({
   Storage: {
     AWSS3: {
@@ -81,6 +91,15 @@ Amplify.configure({
 //     },
 //   },
 // });
+
+// console.log('[DEBUG] Amplify config:', Amplify.configure());
+// // cognitoAuthConfig.currentCredentials()
+//   .then(creds => {
+//     console.log('[DEBUG] Current AWS Credentials:', creds);
+//   })
+//   .catch(err => {
+//     console.error('[DEBUG] currentCredentials() error:', err);
+//   });
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(

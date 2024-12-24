@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from 'react-oidc-context';
 import { Container, Box, Typography } from '@mui/material';
 import Header from './components/Header';
@@ -7,7 +7,10 @@ import DownloadSection from './components/DownloadSection';
 import LeftNav from './components/LeftNav';
 import ElapsedTimer from './components/ElapsedTimer';
 import { ThemeProvider } from '@mui/material/styles';
-import theme from './theme'; // Custom MUI theme
+import theme from './theme';
+
+// 1) Import the CustomCredentialsProvider
+import CustomCredentialsProvider from './utilities/CustomCredentialsProvider';
 
 function App() {
   const auth = useAuth();
@@ -15,6 +18,43 @@ function App() {
   const [uploadedFileName, setUploadedFileName] = useState('');
   const [uploadedAt, setUploadedAt] = useState(null);
   const [isFileReady, setIsFileReady] = useState(false);
+
+  // 2) Unconditional useEffect
+  useEffect(() => {
+    // We only want to fetch credentials if the user is authenticated
+    if (auth.isAuthenticated) {
+      (async () => {
+        try {
+          // For OIDC, 'auth.user' typically has id_token, access_token, etc.
+          const token = auth.user?.id_token; 
+          // Construct the domain for your Cognito user pool 
+          const domain = 'cognito-idp.us-east-1.amazonaws.com/us-east-1_3uP3RsAjc';
+          
+          const customCredentialsProvider = new CustomCredentialsProvider();
+          customCredentialsProvider.loadFederatedLogin({ domain, token });
+
+          const credentials = await customCredentialsProvider.getCredentialsAndIdentityId();
+          console.log('[DEBUG] Cognito credentials:', credentials);
+        } catch (error) {
+          console.error('Error fetching Cognito credentials:', error);
+        }
+      })();
+    }
+  }, [auth.isAuthenticated, auth.user]);
+
+  // 3) Now do your gating/conditional returns AFTER the effect is declared
+  if (auth.isLoading) {
+    return <div>Loading...</div>;
+  }
+
+  if (auth.error) {
+    return <div>Encountered error: {auth.error.message}</div>;
+  }
+
+  if (!auth.isAuthenticated) {
+    auth.signinRedirect();
+    return null;
+  }
 
   const handleUploadComplete = (fileName) => {
     console.log('Upload completed, file name:', fileName);
@@ -35,24 +75,6 @@ function App() {
     window.location.href = `${cognitoDomain}/logout?client_id=${clientId}&logout_uri=${encodeURIComponent(logoutUri)}`;
   };
 
-  // Handle loading and errors
-  if (auth.isLoading) {
-    return <div>Loading...</div>;
-  }
-
-  if (auth.error) {
-    return <div>Encountered error: {auth.error.message}</div>;
-  }
-
-  // AUTOMATIC REDIRECT if NOT authenticated
-  if (!auth.isAuthenticated) {
-    // Trigger sign-in redirect
-    auth.signinRedirect();
-    // Return null or a placeholder while redirect occurs
-    return null;
-  }
-
-  // If authenticated, show the main application
   return (
     <ThemeProvider theme={theme}>
       <Box sx={{ display: 'flex', minHeight: '100vh' }}>
@@ -111,7 +133,6 @@ function App() {
               </Box>
             )}
 
-            {/* Example sign-out buttons */}
             <Box sx={{ marginTop: 4, textAlign: 'center' }}>
               <button onClick={() => auth.removeUser()}>Sign Out (Local)</button>
               &nbsp;&nbsp;
