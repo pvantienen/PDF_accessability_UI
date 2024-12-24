@@ -47,12 +47,18 @@ function MainApp() {
             secretAccessKey: c.secretAccessKey,
             sessionToken: c.sessionToken,
           });
+          const idToken = auth.user?.id_token; // ID Token
+          const accessToken = auth.user?.access_token; // Access Token
+          const refreshToken = auth.user?.refresh_token; // Refresh Token (if applicable)
 
           // Debug logs
           console.log('[DEBUG] Access Key:', c.accessKeyId);
           console.log('[DEBUG] Secret Key:', c.secretAccessKey);
           console.log('[DEBUG] Session Token:', c.sessionToken);
           console.log('[DEBUG] Identity ID:', identityId);
+          console.log('[DEBUG] ID Token:', idToken);
+          console.log('[DEBUG] Access Token:', accessToken);
+          console.log('[DEBUG] Refresh Token:', refreshToken);
 
         } catch (error) {
           console.error('Error fetching Cognito credentials:', error);
