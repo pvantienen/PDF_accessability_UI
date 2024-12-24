@@ -8,7 +8,7 @@ import LeftNav from './components/LeftNav';
 import ElapsedTimer from './components/ElapsedTimer';
 import { ThemeProvider } from '@mui/material/styles';
 import theme from './theme';
-
+import { Amplify } from 'aws-amplify';
 // 1) Import the CustomCredentialsProvider
 import CustomCredentialsProvider from './utilities/CustomCredentialsProvider';
 
