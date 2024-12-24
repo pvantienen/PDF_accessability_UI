@@ -20,6 +20,7 @@ function MainApp() {
   const auth = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
   // Store AWS credentials & upload states
   const [awsCredentials, setAwsCredentials] = useState(null);
   const [uploadedFileName, setUploadedFileName] = useState('');
@@ -90,6 +91,8 @@ function MainApp() {
     try {
       // First remove the local user
       await auth.removeUser();
+      
+      setIsLoggingOut(true);
       navigate('/logout');
       // Then redirect to Cognito logout
       // const cognitoDomain = 'https://pdf-ui-auth.auth.us-east-1.amazoncognito.com';
@@ -122,7 +125,7 @@ function MainApp() {
     return <div>Encountered error: {auth.error.message}</div>;
   }
 
-  if (!auth.isAuthenticated && location.pathname !== '/logout' && !location.pathname.includes('logout')) {
+  if (!auth.isAuthenticated && location.pathname !== '/logout' && !location.pathname.includes('logout') && !isLoggingOut) {
     // If user is not authenticated, force login
     auth.signinRedirect();
     return null;
