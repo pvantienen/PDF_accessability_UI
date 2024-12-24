@@ -45,24 +45,6 @@ function MainApp({ isLoggingOut, setIsLoggingOut }) {
             sessionToken: c.sessionToken,
           });
 
-          const idToken = auth.user?.id_token;
-          const accessToken = auth.user?.access_token;
-          const refreshToken = auth.user?.refresh_token;
-
-          // Debug logs
-          console.log('[DEBUG] Access Key:', c.accessKeyId);
-          console.log('[DEBUG] Secret Key:', c.secretAccessKey);
-          console.log('[DEBUG] Session Token:', c.sessionToken);
-          console.log('[DEBUG] Identity ID:', identityId);
-          console.log('[DEBUG] ID Token:', idToken);
-          console.log('[DEBUG] Access Token:', accessToken);
-          console.log('[DEBUG] Refresh Token:', refreshToken);
-          
-          if (idToken) {
-            // Store ID token in localStorage so LogoutPage can access it
-            localStorage.setItem('id_token', idToken);
-          }
-
         } catch (error) {
           console.error('Error fetching Cognito credentials:', error);
         }
@@ -131,7 +113,8 @@ function MainApp({ isLoggingOut, setIsLoggingOut }) {
         <LeftNav />
 
         <Box sx={{ flexGrow: 1, padding: 3, backgroundColor: '#f4f6f8' }}>
-          <Header />
+          {/* Pass handleSignOut to Header */}
+          <Header handleSignOut={handleSignOut}/>
 
           <Container maxWidth="lg" sx={{ marginTop: 4 }}>
             {/* Upload Section */}
@@ -198,8 +181,8 @@ function MainApp({ isLoggingOut, setIsLoggingOut }) {
               </Box>
             )}
 
-            {/* Sign Out Buttons */}
-            <Box sx={{ marginTop: 4, textAlign: 'center' }}>
+            {/* Remove the existing Sign Out buttons below */}
+            {/* <Box sx={{ marginTop: 4, textAlign: 'center' }}>
               <button onClick={() => auth.removeUser()}>
                 Sign Out (Local)
               </button>
@@ -217,7 +200,7 @@ function MainApp({ isLoggingOut, setIsLoggingOut }) {
               >
                 Sign Out (2)
               </button>
-            </Box>
+            </Box> */}
           </Container>
         </Box>
       </Box>
