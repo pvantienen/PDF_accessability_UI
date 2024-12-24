@@ -11,6 +11,7 @@
     "@aws-sdk/client-cognito-identity": "^3.716.0",
     "@aws-sdk/client-s3": "^3.717.0",
     "@aws-sdk/credential-providers": "^3.658.1",
+    "@aws-sdk/s3-request-presigner": "^3.717.0",
     "@emotion/react": "^11.13.3",
     "@emotion/styled": "^11.13.0",
     "@mui/icons-material": "^6.1.1",
