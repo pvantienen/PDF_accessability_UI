@@ -47,6 +47,7 @@ function MainApp() {
             secretAccessKey: c.secretAccessKey,
             sessionToken: c.sessionToken,
           });
+          
           const idToken = auth.user?.id_token; // ID Token
           const accessToken = auth.user?.access_token; // Access Token
           const refreshToken = auth.user?.refresh_token; // Refresh Token (if applicable)
