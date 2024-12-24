@@ -35,6 +35,17 @@ function App() {
 
           const credentials = await customCredentialsProvider.getCredentialsAndIdentityId();
           console.log('[DEBUG] Cognito credentials:', credentials);
+          Amplify.configure({
+            Auth: {
+              credentialsProvider: customCredentialsProvider
+            },
+            Storage: {
+              AWSS3: {
+                bucket: "pdfaccessibility-pdfaccessibilitybucket149b7021e-wurx8blwem2d",
+                region: "us-east-1",
+              },
+            },
+          });
         } catch (error) {
           console.error('Error fetching Cognito credentials:', error);
         }

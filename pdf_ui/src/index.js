@@ -23,17 +23,7 @@ const customCredentialsProvider = new CustomCredentialsProvider();
 //   },
 // });
 
-Amplify.configure({
-  // Auth: {
-  //   credentialsProvider: customCredentialsProvider
-  // },
-  Storage: {
-    AWSS3: {
-      bucket: "pdfaccessibility-pdfaccessibilitybucket149b7021e-wurx8blwem2d",
-      region: "us-east-1",
-    },
-  },
-});
+
 
 // Amplify.configure({
 //   Auth: {
