@@ -18,7 +18,7 @@ function App() {
   const [uploadedFileName, setUploadedFileName] = useState('');
   const [uploadedAt, setUploadedAt] = useState(null);
   const [isFileReady, setIsFileReady] = useState(false);
-
+  
   // 2) Unconditional useEffect
   useEffect(() => {
     // We only want to fetch credentials if the user is authenticated
