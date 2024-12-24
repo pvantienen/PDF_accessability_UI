@@ -122,7 +122,7 @@ function MainApp() {
     return <div>Encountered error: {auth.error.message}</div>;
   }
 
-  if (!auth.isAuthenticated && location.pathname !== '/logout') {
+  if (!auth.isAuthenticated && location.pathname !== '/logout' && !location.pathname.includes('logout')) {
     // If user is not authenticated, force login
     auth.signinRedirect();
     return null;
