@@ -37,6 +37,7 @@ function UploadSection({ onUploadComplete, awsCredentials }) {
     }
     try {
       // Create S3 client
+      console.log('awsCredentials in upload section:', awsCredentials);
       const client = new S3Client({
         region: 'us-east-1',
         credentials: {
