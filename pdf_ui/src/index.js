@@ -15,8 +15,7 @@ const cognitoAuthConfig = {
   response_type: "code",
   scope: "email openid phone profile",
 };
-// const customCredentialsProvider = new MyOidcCredentialsProvider(cognitoAuthConfig);
-// // const customCredentialsProvider = new CustomCredentialsProvider();
+const customCredentialsProvider = new CustomCredentialsProvider();
 // Amplify.configure({
 //   Auth: {
 //     // Supply the custom credentials provider to Amplify
@@ -25,6 +24,9 @@ const cognitoAuthConfig = {
 // });
 
 Amplify.configure({
+  Auth: {
+    credentialsProvider: customCredentialsProvider
+  },
   Storage: {
     AWSS3: {
       bucket: "pdfaccessibility-pdfaccessibilitybucket149b7021e-wurx8blwem2d",
@@ -92,14 +94,6 @@ Amplify.configure({
 //   },
 // });
 
-// console.log('[DEBUG] Amplify config:', Amplify.configure());
-// // cognitoAuthConfig.currentCredentials()
-//   .then(creds => {
-//     console.log('[DEBUG] Current AWS Credentials:', creds);
-//   })
-//   .catch(err => {
-//     console.error('[DEBUG] currentCredentials() error:', err);
-//   });
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(
