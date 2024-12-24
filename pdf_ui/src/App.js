@@ -8,13 +8,14 @@ import LeftNav from './components/LeftNav';
 import ElapsedTimer from './components/ElapsedTimer';
 import { ThemeProvider } from '@mui/material/styles';
 import theme from './theme';
-import { Amplify } from 'aws-amplify';
+
+
 // 1) Import the CustomCredentialsProvider
 import CustomCredentialsProvider from './utilities/CustomCredentialsProvider';
 
 function App() {
   const auth = useAuth();
-
+  const [awsCredentials, setAwsCredentials] = useState(null);
   const [uploadedFileName, setUploadedFileName] = useState('');
   const [uploadedAt, setUploadedAt] = useState(null);
   const [isFileReady, setIsFileReady] = useState(false);
@@ -34,18 +35,13 @@ function App() {
           customCredentialsProvider.loadFederatedLogin({ domain, token });
 
           const credentials = await customCredentialsProvider.getCredentialsAndIdentityId();
-          console.log('[DEBUG] Cognito credentials:', credentials);
-          Amplify.configure({
-            Auth: {
-              credentialsProvider: customCredentialsProvider
-            },
-            Storage: {
-              AWSS3: {
-                bucket: "pdfaccessibility-pdfaccessibilitybucket149b7021e-wurx8blwem2d",
-                region: "us-east-1",
-              },
-            },
+          setAwsCredentials({
+            accessKeyId: credentials.accessKeyId,
+            secretAccessKey: credentials.secretAccessKey,
+            sessionToken: credentials.sessionToken,
           });
+          console.log('[DEBUG] Cognito credentials:', credentials);
+        
         } catch (error) {
           console.error('Error fetching Cognito credentials:', error);
         }
@@ -95,7 +91,7 @@ function App() {
           <Header />
 
           <Container maxWidth="lg" sx={{ marginTop: 4 }}>
-            <Box
+          <Box
               sx={{
                 textAlign: 'center',
                 padding: 4,
@@ -113,7 +109,8 @@ function App() {
                 Drag & drop your PDF file below, or click to select it.
               </Typography>
 
-              <UploadSection onUploadComplete={handleUploadComplete} />
+              {/* Our new custom UploadSection */}
+              <UploadSection onUploadComplete={handleUploadComplete} awsCredentials={awsCredentials}  />
             </Box>
 
             <Box
