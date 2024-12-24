@@ -1,18 +1,22 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from 'react-oidc-context';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { Container, Box, Typography } from '@mui/material';
+import { ThemeProvider } from '@mui/material/styles';
+
 import Header from './components/Header';
 import UploadSection from './components/UploadSection';
 import DownloadSection from './components/DownloadSection';
 import LeftNav from './components/LeftNav';
 import ElapsedTimer from './components/ElapsedTimer';
-import { ThemeProvider } from '@mui/material/styles';
+import LogoutPage from './components/LogoutPage';  // <-- import our new component
+
 import theme from './theme';
 
 // 1) Import the CustomCredentialsProvider
 import CustomCredentialsProvider from './utilities/CustomCredentialsProvider';
 
-function App() {
+function MainApp() {
   const auth = useAuth();
 
   // Store AWS credentials & upload states
@@ -27,10 +31,10 @@ function App() {
       (async () => {
         try {
           // For OIDC, 'auth.user' typically has id_token, access_token, etc.
-          const token = auth.user?.id_token; 
-          // Construct the domain for your Cognito user pool 
+          const token = auth.user?.id_token;
+          // Construct the domain for your Cognito user pool
           const domain = 'cognito-idp.us-east-1.amazonaws.com/us-east-1_3uP3RsAjc';
-          
+
           const customCredentialsProvider = new CustomCredentialsProvider();
           customCredentialsProvider.loadFederatedLogin({ domain, token });
 
@@ -57,27 +61,6 @@ function App() {
     }
   }, [auth.isAuthenticated, auth.user]);
 
-  // 3) Gating/conditional returns
-  if (auth.isLoading) {
-    return <div>Loading...</div>;
-  }
-  if (auth.error) {
-    // If you want to specifically check if error.message includes 'No matching state found in storage'
-    if (auth.error.message.includes('No matching state found')) {
-      console.log('Detected invalid or mismatched OIDC state. Redirecting to login...');
-      auth.removeUser().then(() => {
-        auth.signinRedirect(); // Force re-auth
-      });
-      return null; // Avoid rendering the main app
-    }
-    // If it's some other error, you can display or handle it
-    return <div>Encountered error: {auth.error.message}</div>;
-  }
-  if (!auth.isAuthenticated) {
-    auth.signinRedirect();
-    return null;
-  }
-
   // Handle events from child components
   const handleUploadComplete = (fileName) => {
     console.log('Upload completed, file name:', fileName);
@@ -91,15 +74,47 @@ function App() {
     setIsFileReady(true);
   };
 
-  const signOutRedirect = () => {
-    const clientId = '2r4vl1l7nmkn0u7bmne4c3tve5'; 
-    const logoutUri = 'https://main.d3tdsepn39r5l1.amplifyapp.com';
-    const cognitoDomain = 'https://pdf-ui-auth.auth.us-east-1.amazoncognito.com';
-    auth.removeUser().then(() => {
-      // 2) Redirect to Cognito logout endpoint
-      window.location.href = `${cognitoDomain}/logout?client_id=${clientId}&logout_uri=${encodeURIComponent(logoutUri)}`;
-    });
+  const handleSignOut = async () => {
+    try {
+      // First remove the local user
+      await auth.removeUser();
+      
+      // Then redirect to Cognito logout
+      const cognitoDomain = 'https://pdf-ui-auth.auth.us-east-1.amazoncognito.com';
+      const clientId = '2r4vl1l7nmkn0u7bmne4c3tve5';
+      
+      // IMPORTANT: Make sure this URL is allowed in your Cognito "Sign out URL(s)".
+      // If you want to redirect to /logout in your app, then Cognito must allow it.
+      const logoutUri = encodeURIComponent('https://main.d3tdsepn39r5l1.amplifyapp.com/logout');
+      
+      window.location.href = `${cognitoDomain}/logout?client_id=${clientId}&logout_uri=${logoutUri}`;
+    } catch (error) {
+      console.error('Error during sign out:', error);
+    }
   };
+
+  if (auth.isLoading) {
+    return <div>Loading...</div>;
+  }
+
+  if (auth.error) {
+    // If you want to specifically check if error.message includes 'No matching state found in storage'
+    if (auth.error.message.includes('No matching state found')) {
+      console.log('Detected invalid or mismatched OIDC state. Redirecting to login...');
+      auth.removeUser().then(() => {
+        auth.signinRedirect(); // Force re-auth
+      });
+      return null; // Avoid rendering the main app
+    }
+    // If it's some other error, you can display or handle it
+    return <div>Encountered error: {auth.error.message}</div>;
+  }
+
+  if (!auth.isAuthenticated) {
+    // If user is not authenticated, force login
+    auth.signinRedirect();
+    return null;
+  }
 
   return (
     <ThemeProvider theme={theme}>
@@ -151,10 +166,7 @@ function App() {
                 marginBottom: 4,
               }}
             >
-              <ElapsedTimer
-                uploadedAt={uploadedAt}
-                isFileReady={isFileReady}
-              />
+              <ElapsedTimer uploadedAt={uploadedAt} isFileReady={isFileReady} />
             </Box>
 
             {/* Download Section */}
@@ -169,7 +181,6 @@ function App() {
                   marginTop: 4,
                 }}
               >
-                {/* Pass awsCredentials here too if needed for the new approach */}
                 <DownloadSection
                   filename={uploadedFileName}
                   onFileReady={handleFileReady}
@@ -180,21 +191,42 @@ function App() {
 
             {/* Sign Out Buttons */}
             <Box sx={{ marginTop: 4, textAlign: 'center' }}>
-              <button onClick={() => auth.removeUser()
-
-              }>Sign Out (Local)</button>
+              <button onClick={() => auth.removeUser()}>
+                Sign Out (Local)
+              </button>
               &nbsp;&nbsp;
-              <button onClick={signOutRedirect}>Sign Out (Redirect)</button>
-              <button onClick={() => auth.signoutRedirect({                
-                post_logout_redirect_uri: "https://main.d3tdsepn39r5l1.amplifyapp.com",
-                client_id:"2r4vl1l7nmkn0u7bmne4c3tve5"
-                })}
-                >Sign Out (2)</button>
+              <button onClick={handleSignOut}>Sign Out (New)</button>
+              &nbsp;&nbsp;
+              <button
+                onClick={() =>
+                  auth.signoutRedirect({
+                    post_logout_redirect_uri:
+                      'https://main.d3tdsepn39r5l1.amplifyapp.com/logout',
+                    client_id: '2r4vl1l7nmkn0u7bmne4c3tve5',
+                  })
+                }
+              >
+                Sign Out (2)
+              </button>
             </Box>
           </Container>
         </Box>
       </Box>
     </ThemeProvider>
+  );
+}
+
+function App() {
+  return (
+    <Router>
+      <Routes>
+        {/* Route for the logout page */}
+        <Route path="/logout" element={<LogoutPage />} />
+
+        {/* Catch-all route for the main application */}
+        <Route path="*" element={<MainApp />} />
+      </Routes>
+    </Router>
   );
 }
 
