@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
-import { Box, Button, Typography, TextField } from '@mui/material';
+import { Box, Button, Typography, TextField, CircularProgress } from '@mui/material';
+import { motion } from 'framer-motion';
 
 function UploadSection({ onUploadComplete, awsCredentials }) {
   const [selectedFile, setSelectedFile] = useState(null);
+  const [isUploading, setIsUploading] = useState(false);
 
   const handleFileInput = (e) => {
     const file = e.target.files[0];
@@ -31,6 +33,9 @@ function UploadSection({ onUploadComplete, awsCredentials }) {
       alert('AWS credentials not available yet. Please wait...');
       return;
     }
+
+    setIsUploading(true);
+
     try {
       const client = new S3Client({
         region: 'us-east-1',
@@ -54,29 +59,62 @@ function UploadSection({ onUploadComplete, awsCredentials }) {
       setSelectedFile(null);
     } catch (error) {
       console.error('Error uploading file:', error);
+    } finally {
+      setIsUploading(false);
     }
   };
 
   return (
-    <Box sx={{ textAlign: 'center', padding: '1rem', border: '1px solid #ccc', borderRadius: '8px' }}>
-      <Typography variant="h6" gutterBottom>
-        Upload PDF
-      </Typography>
-      <TextField
-        type="file"
-        accept=".pdf"
-        onChange={handleFileInput}
-        inputProps={{ style: { display: 'block', marginBottom: '1rem' } }}
-      />
-      <Button
-        variant="contained"
-        color="primary"
-        onClick={handleUpload}
-        disabled={!selectedFile}
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.5 }}
+    >
+      <Box
+        sx={{
+          textAlign: 'center',
+          padding: '2rem',
+          border: '1px solid #ddd',
+          borderRadius: '12px',
+          backgroundColor: '#f9f9f9',
+          boxShadow: '0 8px 15px rgba(0, 0, 0, 0.1)',
+          maxWidth: '400px',
+          margin: '0 auto',
+        }}
       >
-        Upload to S3
-      </Button>
-    </Box>
+        <Typography variant="h5" gutterBottom sx={{ color: '#333' }}>
+          Upload Your PDF
+        </Typography>
+        <TextField
+          type="file"
+          accept=".pdf"
+          onChange={handleFileInput}
+          inputProps={{ style: { display: 'block', margin: '1rem auto' } }}
+        />
+        {isUploading ? (
+          <CircularProgress color="primary" />
+        ) : (
+          <Button
+            variant="contained"
+            color="primary"
+            onClick={handleUpload}
+            disabled={!selectedFile}
+            sx={{
+              backgroundColor: '#1976d2',
+              color: '#fff',
+              padding: '0.6rem 1.2rem',
+              transition: 'transform 0.3s',
+              '&:hover': {
+                backgroundColor: '#125b9d',
+                transform: 'scale(1.05)',
+              },
+            }}
+          >
+            {selectedFile ? 'Upload PDF' : 'Select a PDF First'}
+          </Button>
+        )}
+      </Box>
+    </motion.div>
   );
 }
 

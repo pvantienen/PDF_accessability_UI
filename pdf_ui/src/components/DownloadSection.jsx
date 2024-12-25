@@ -1,11 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import { Box, Alert, Button, Typography } from '@mui/material';
-import {
-  S3Client,
-  HeadObjectCommand,
-  GetObjectCommand,
-} from '@aws-sdk/client-s3';
+import { Box, Alert, Button, Typography, CircularProgress } from '@mui/material';
+import { S3Client, HeadObjectCommand, GetObjectCommand } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
+import { motion } from 'framer-motion';
 
 const bucketName = process.env.REACT_APP_BUCKET_NAME;
 const region = process.env.REACT_APP_BUCKET_REGION;
@@ -58,25 +55,58 @@ export default function DownloadSection({ filename, onFileReady, awsCredentials 
   }, [filename, isFileReady, onFileReady, awsCredentials]);
 
   return (
-    <Box sx={{ textAlign: 'center', padding: '1rem', border: '1px solid #ccc', borderRadius: '8px', marginTop: '1rem' }}>
-      {!isFileReady ? (
-        <Alert severity="info">
-          Note: Processing may take 3–15 minutes for files around 1–20 pages. Please be patient.
-        </Alert>
-      ) : (
-        <Alert severity="success">
-          Remediation complete! Click below to download your file.
-        </Alert>
-      )}
-      <Button
-        variant="contained"
-        color={isFileReady ? 'success' : 'info'}
-        onClick={() => isFileReady && window.open(downloadUrl, '_blank')}
-        disabled={!isFileReady}
-        sx={{ marginTop: '1rem' }}
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.5 }}
+    >
+      <Box
+        sx={{
+          textAlign: 'center',
+          padding: '2rem',
+          border: '1px solid #ddd',
+          borderRadius: '12px',
+          backgroundColor: '#f9f9f9',
+          boxShadow: '0 8px 15px rgba(0, 0, 0, 0.1)',
+          maxWidth: '400px',
+          margin: '2rem auto',
+        }}
       >
-        {isFileReady ? `Download ${filename}` : `Remediating ${filename}`}
-      </Button>
-    </Box>
+        {!isFileReady ? (
+          <Alert severity="info" sx={{ marginBottom: '1rem' }}>
+            Processing your file. This may take a few minutes. Please be patient.
+          </Alert>
+        ) : (
+          <Alert severity="success" sx={{ marginBottom: '1rem' }}>
+            Remediation complete! Your file is ready for download.
+          </Alert>
+        )}
+        {isFileReady ? (
+          <motion.div
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+          >
+            <Button
+              variant="contained"
+              color="success"
+              onClick={() => window.open(downloadUrl, '_blank')}
+              sx={{
+                backgroundColor: '#4caf50',
+                color: '#fff',
+                padding: '0.6rem 1.2rem',
+                transition: 'transform 0.3s',
+                '&:hover': {
+                  backgroundColor: '#388e3c',
+                },
+              }}
+            >
+              Download {filename}
+            </Button>
+          </motion.div>
+        ) : (
+          <CircularProgress color="primary" />
+        )}
+      </Box>
+    </motion.div>
   );
 }

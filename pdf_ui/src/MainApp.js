@@ -180,27 +180,6 @@ function MainApp({ isLoggingOut, setIsLoggingOut }) {
                 />
               </Box>
             )}
-
-            {/* Remove the existing Sign Out buttons below */}
-            {/* <Box sx={{ marginTop: 4, textAlign: 'center' }}>
-              <button onClick={() => auth.removeUser()}>
-                Sign Out (Local)
-              </button>
-              &nbsp;&nbsp;
-              <button onClick={handleSignOut}>Sign Out (New)</button>
-              &nbsp;&nbsp;
-              <button
-                onClick={() =>
-                  auth.signoutRedirect({
-                    post_logout_redirect_uri:
-                      'https://main.d3tdsepn39r5l1.amplifyapp.com/logout',
-                    client_id: '2r4vl1l7nmkn0u7bmne4c3tve5',
-                  })
-                }
-              >
-                Sign Out (2)
-              </button>
-            </Box> */}
           </Container>
         </Box>
       </Box>
