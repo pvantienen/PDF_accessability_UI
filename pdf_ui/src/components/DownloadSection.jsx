@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import { Box, Alert, Button, Typography, CircularProgress } from '@mui/material';
+import { Box, Alert, Typography } from '@mui/material';
 import { S3Client, HeadObjectCommand, GetObjectCommand } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { motion } from 'framer-motion';
+import { LoadingButton } from '@mui/lab'; // Importing LoadingButton from MUI Lab
 
 const bucketName = process.env.REACT_APP_BUCKET_NAME;
 const region = process.env.REACT_APP_BUCKET_REGION;
@@ -84,9 +85,13 @@ export default function DownloadSection({ filename, onFileReady, awsCredentials 
             Remediation complete! Your file is ready.
           </Alert>
         )}
-        <Button
+        <LoadingButton
           variant="contained"
-          color={isFileReady ? "success" : "info"}
+          color="primary"
+          loading={!isFileReady}
+          loadingIndicator={
+            <CircularProgress size={20} sx={{ color: 'white' }} />
+          }
           disabled={!isFileReady}
           onClick={() => isFileReady && window.open(downloadUrl, '_blank')}
           sx={{
@@ -100,9 +105,8 @@ export default function DownloadSection({ filename, onFileReady, awsCredentials 
             },
           }}
         >
-          {isFileReady ? 'Open in New Tab' : 'Remediating...'}
-        </Button>
-        {!isFileReady && <CircularProgress color="primary" sx={{ marginTop: '1rem' }} />}
+          {isFileReady ? `Download Remediated ${filename}` : `Remediating: ${filename}`}
+        </LoadingButton>
       </Box>
     </motion.div>
   );

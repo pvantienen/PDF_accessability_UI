@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
-import { Box, Button, Typography, TextField, CircularProgress } from '@mui/material';
+import { Box, Typography, TextField } from '@mui/material';
+import { LoadingButton } from '@mui/lab'; // Import LoadingButton for better progress display
 import { motion } from 'framer-motion';
 
 function UploadSection({ onUploadComplete, awsCredentials }) {
@@ -91,29 +92,29 @@ function UploadSection({ onUploadComplete, awsCredentials }) {
           onChange={handleFileInput}
           inputProps={{ style: { display: 'block', margin: '1rem auto' } }}
         />
-        {isUploading ? (
-          <CircularProgress color="primary" />
-        ) : (
-          <Button
-            variant="contained"
-            color="primary"
-            onClick={handleUpload}
-            disabled={!selectedFile}
-            sx={{
-              marginTop: '1rem',
-              backgroundColor: '#1976d2',
-              color: '#fff',
-              padding: '0.6rem 1.2rem',
-              transition: 'transform 0.3s',
-              '&:hover': {
-                backgroundColor: '#125b9d',
-                transform: 'scale(1.05)',
-              },
-            }}
-          >
-            {selectedFile ? 'Upload PDF' : 'Select a PDF First'}
-          </Button>
-        )}
+        <LoadingButton
+          variant="contained"
+          color="primary"
+          loading={isUploading}
+          onClick={handleUpload}
+          disabled={!selectedFile || isUploading}
+          sx={{
+            marginTop: '1rem',
+            backgroundColor: '#1976d2',
+            color: '#fff',
+            padding: '0.6rem 1.2rem',
+            transition: 'transform 0.3s',
+            '&:hover': {
+              backgroundColor: '#125b9d',
+              transform: 'scale(1.05)',
+            },
+          }}
+          loadingIndicator={
+            <CircularProgress size={20} sx={{ color: 'white' }} />
+          }
+        >
+          {isUploading ? 'Uploading...' : selectedFile ? 'Upload PDF' : 'Select a PDF First'}
+        </LoadingButton>
       </Box>
     </motion.div>
   );

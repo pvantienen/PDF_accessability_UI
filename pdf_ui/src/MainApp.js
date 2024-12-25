@@ -18,7 +18,7 @@ function MainApp({ isLoggingOut, setIsLoggingOut }) {
   const auth = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  
+
   // Store AWS credentials & upload states
   const [awsCredentials, setAwsCredentials] = useState(null);
   const [uploadedFileName, setUploadedFileName] = useState('');
@@ -44,7 +44,6 @@ function MainApp({ isLoggingOut, setIsLoggingOut }) {
             secretAccessKey: c.secretAccessKey,
             sessionToken: c.sessionToken,
           });
-
         } catch (error) {
           console.error('Error fetching Cognito credentials:', error);
         }
@@ -65,11 +64,18 @@ function MainApp({ isLoggingOut, setIsLoggingOut }) {
     setIsFileReady(true);
   };
 
+  const handleNewUpload = () => {
+    // Reset all states to restart the process
+    setUploadedFileName('');
+    setUploadedAt(null);
+    setIsFileReady(false);
+  };
+
   const handleSignOut = async () => {
     try {
       // First remove the local user
       await auth.removeUser();
-      
+
       setIsLoggingOut(true); // Update logout state
       navigate('/logout');    // Navigate to logout page
       // The actual signoutRedirect is handled in LogoutPage
@@ -84,25 +90,22 @@ function MainApp({ isLoggingOut, setIsLoggingOut }) {
   }
 
   if (auth.error) {
-    // If you want to specifically check if error.message includes 'No matching state found in storage'
     if (auth.error.message.includes('No matching state found')) {
       console.log('Detected invalid or mismatched OIDC state. Redirecting to login...');
       auth.removeUser().then(() => {
         auth.signinRedirect(); // Force re-auth
       });
-      return null; // Avoid rendering the main app
+      return null;
     }
-    // If it's some other error, you can display or handle it
     return <div>Encountered error: {auth.error.message}</div>;
   }
 
   if (
-    !auth.isAuthenticated && 
-    location.pathname !== '/logout' && 
-    !location.pathname.includes('logout') && 
+    !auth.isAuthenticated &&
+    location.pathname !== '/logout' &&
+    !location.pathname.includes('logout') &&
     !isLoggingOut
   ) {
-    // If user is not authenticated and not on /logout and not logging out, force login
     auth.signinRedirect();
     return null;
   }
@@ -113,11 +116,9 @@ function MainApp({ isLoggingOut, setIsLoggingOut }) {
         <LeftNav />
 
         <Box sx={{ flexGrow: 1, padding: 3, backgroundColor: '#f4f6f8' }}>
-          {/* Pass handleSignOut to Header */}
-          <Header handleSignOut={handleSignOut}/>
+          <Header handleSignOut={handleSignOut} />
 
           <Container maxWidth="lg" sx={{ marginTop: 4 }}>
-            {/* Upload Section */}
             <Box
               sx={{
                 textAlign: 'center',
@@ -140,14 +141,22 @@ function MainApp({ isLoggingOut, setIsLoggingOut }) {
                 Drag & drop your PDF file below, or click to select it.
               </Typography>
 
-              {/* Pass down awsCredentials to our custom UploadSection */}
               <UploadSection
                 onUploadComplete={handleUploadComplete}
                 awsCredentials={awsCredentials}
               />
+              {uploadedFileName && (
+                <Button
+                  variant="outlined"
+                  color="secondary"
+                  onClick={handleNewUpload}
+                  sx={{ marginTop: 2 }}
+                >
+                  Upload a New PDF
+                </Button>
+              )}
             </Box>
 
-            {/* Elapsed Timer */}
             <Box
               sx={{
                 textAlign: 'center',
@@ -161,7 +170,6 @@ function MainApp({ isLoggingOut, setIsLoggingOut }) {
               <ElapsedTimer uploadedAt={uploadedAt} isFileReady={isFileReady} />
             </Box>
 
-            {/* Download Section */}
             {uploadedFileName && (
               <Box
                 sx={{
