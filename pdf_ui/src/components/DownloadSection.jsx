@@ -72,40 +72,37 @@ export default function DownloadSection({ filename, onFileReady, awsCredentials 
           margin: '2rem auto',
         }}
       >
+        <Typography variant="h6" sx={{ marginBottom: '1rem' }}>
+          {isFileReady ? `File Ready: ${filename}` : `Processing File: ${filename}`}
+        </Typography>
         {!isFileReady ? (
           <Alert severity="info" sx={{ marginBottom: '1rem' }}>
             Processing your file. This may take a few minutes. Please be patient.
           </Alert>
         ) : (
           <Alert severity="success" sx={{ marginBottom: '1rem' }}>
-            Remediation complete! Your file is ready for download.
+            Remediation complete! Your file is ready.
           </Alert>
         )}
-        {isFileReady ? (
-          <motion.div
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-          >
-            <Button
-              variant="contained"
-              color="success"
-              onClick={() => window.open(downloadUrl, '_blank')}
-              sx={{
-                backgroundColor: '#4caf50',
-                color: '#fff',
-                padding: '0.6rem 1.2rem',
-                transition: 'transform 0.3s',
-                '&:hover': {
-                  backgroundColor: '#388e3c',
-                },
-              }}
-            >
-              Download {filename}
-            </Button>
-          </motion.div>
-        ) : (
-          <CircularProgress color="primary" />
-        )}
+        <Button
+          variant="contained"
+          color={isFileReady ? "success" : "info"}
+          disabled={!isFileReady}
+          onClick={() => isFileReady && window.open(downloadUrl, '_blank')}
+          sx={{
+            backgroundColor: isFileReady ? '#4caf50' : '#b0bec5',
+            color: '#fff',
+            padding: '0.6rem 1.2rem',
+            transition: 'transform 0.3s',
+            cursor: isFileReady ? 'pointer' : 'not-allowed',
+            '&:hover': {
+              backgroundColor: isFileReady ? '#388e3c' : '#b0bec5',
+            },
+          }}
+        >
+          {isFileReady ? 'Open in New Tab' : 'Remediating...'}
+        </Button>
+        {!isFileReady && <CircularProgress color="primary" sx={{ marginTop: '1rem' }} />}
       </Box>
     </motion.div>
   );

@@ -100,6 +100,7 @@ function UploadSection({ onUploadComplete, awsCredentials }) {
             onClick={handleUpload}
             disabled={!selectedFile}
             sx={{
+              marginTop: '1rem',
               backgroundColor: '#1976d2',
               color: '#fff',
               padding: '0.6rem 1.2rem',
