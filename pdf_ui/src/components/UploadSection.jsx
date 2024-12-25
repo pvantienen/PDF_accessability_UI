@@ -113,7 +113,7 @@ function UploadSection({ onUploadComplete, awsCredentials }) {
             <CircularProgress size={20} sx={{ color: 'white' }} />
           }
         >
-          {isUploading ? 'Uploading...' : selectedFile ? 'Upload PDF' : 'Select a PDF First'}
+          {isUploading ? 'Uploading...' : selectedFile ? `Upload ${selectedFile.name}` : 'Please Upload A PDF'}
         </LoadingButton>
       </Box>
     </motion.div>
