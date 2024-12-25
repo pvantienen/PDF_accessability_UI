@@ -3,7 +3,7 @@ import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
 import { Box, Typography, TextField } from '@mui/material';
 import { LoadingButton } from '@mui/lab'; // Import LoadingButton for better progress display
 import { motion } from 'framer-motion';
-
+import { CircularProgress } from '@mui/material';
 function UploadSection({ onUploadComplete, awsCredentials }) {
   const [selectedFile, setSelectedFile] = useState(null);
   const [isUploading, setIsUploading] = useState(false);
