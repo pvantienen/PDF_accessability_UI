@@ -13,29 +13,29 @@ function Header({ handleSignOut }) {
           PDF Accessibility
         </Typography>
         <Box>
-        <Button 
-          color="inherit" 
-          onClick={handleSignOut} 
-          variant="outlined"
-          sx={{
-            borderColor: 'rgba(255, 255, 255, 0.6)', // Slightly subdued border color
-            color: 'white', // Consistent text color
-            padding: '6px 16px', // Better spacing for a polished look
-            borderRadius: '8px', // Smooth rounded corners
-            fontSize: '0.875rem', // Slightly smaller font for elegance
-            '&:hover': {
-              backgroundColor: 'rgba(255, 255, 255, 0.2)', // Subtle hover effect
-              borderColor: 'rgba(255, 255, 255, 0.8)', // Slightly brighter on hover
-            },
-            '&:focus': {
-              outline: 'none',
-              boxShadow: '0 0 4px rgba(255, 255, 255, 0.5)', // Minimal focus outline
-            },
-            transition: 'all 0.3s ease-in-out', // Smooth transitions for hover/focus effects
-          }}
-        >
-          Sign Out
-        </Button>
+          <Button 
+    onClick={handleSignOut} 
+    variant="outlined"
+    sx={{
+      borderColor: '#1976d2', // Blue border for better contrast
+      color: '#1976d2', // Matching text color
+      padding: '6px 16px', // Balanced spacing
+      borderRadius: '8px', // Smooth rounded corners
+      fontSize: '0.875rem', // Consistent font size
+      '&:hover': {
+        backgroundColor: 'rgba(25, 118, 210, 0.1)', // Subtle hover effect with blue tint
+        borderColor: '#1565c0', // Darker blue on hover
+      },
+      '&:focus': {
+        outline: 'none',
+        boxShadow: '0 0 4px rgba(25, 118, 210, 0.5)', // Minimal blue focus outline
+      },
+      transition: 'all 0.3s ease-in-out', // Smooth transition
+    }}
+  >
+    Sign Out
+  </Button>
+
 
         </Box>
       </Toolbar>
