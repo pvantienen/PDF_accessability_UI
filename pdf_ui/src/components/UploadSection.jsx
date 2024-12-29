@@ -1,14 +1,17 @@
 import React, { useState } from 'react';
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
-import { Box, Typography, TextField } from '@mui/material';
-import { LoadingButton } from '@mui/lab'; // Import LoadingButton for better progress display
+import { Box, Typography, TextField, Tooltip, IconButton } from '@mui/material';
+import { LoadingButton } from '@mui/lab';
 import { motion } from 'framer-motion';
 import { CircularProgress } from '@mui/material';
+import { InfoOutlined } from '@mui/icons-material';
+import * as pdfjsLib from 'pdfjs-dist';
+
 function UploadSection({ onUploadComplete, awsCredentials }) {
   const [selectedFile, setSelectedFile] = useState(null);
   const [isUploading, setIsUploading] = useState(false);
 
-  const handleFileInput = (e) => {
+  const handleFileInput = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
 
@@ -17,12 +20,27 @@ function UploadSection({ onUploadComplete, awsCredentials }) {
       return;
     }
 
-    if (file.size > 100 * 1024 * 1024) {
-      alert('File size exceeds 100 MB limit.');
+    if (file.size > 25 * 1024 * 1024) {
+      alert('File size exceeds 25 MB limit.');
       return;
     }
 
-    setSelectedFile(file);
+    try {
+      const fileReader = new FileReader();
+      fileReader.onload = async function () {
+        const typedArray = new Uint8Array(this.result);
+        const pdf = await pdfjsLib.getDocument(typedArray).promise;
+        if (pdf.numPages > 10) {
+          alert('PDF file cannot exceed 10 pages.');
+          return;
+        }
+        setSelectedFile(file);
+      };
+      fileReader.readAsArrayBuffer(file);
+    } catch (error) {
+      console.error('Error reading PDF file:', error);
+      alert('Unable to read the PDF file.');
+    }
   };
 
   const handleUpload = async () => {
@@ -83,9 +101,16 @@ function UploadSection({ onUploadComplete, awsCredentials }) {
           margin: '0 auto',
         }}
       >
-        <Typography variant="h5" gutterBottom sx={{ color: '#333' }}>
-          Upload Your PDF
-        </Typography>
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1 }}>
+          <Typography variant="h5" sx={{ color: '#333' }}>
+            Upload Your PDF
+          </Typography>
+          <Tooltip title="Only PDF files allowed. Max size: 25 MB. Max pages: 10.">
+            <IconButton>
+              <InfoOutlined />
+            </IconButton>
+          </Tooltip>
+        </Box>
         <TextField
           type="file"
           accept=".pdf"
