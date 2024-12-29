@@ -7,6 +7,9 @@ import { CircularProgress } from '@mui/material';
 import { InfoOutlined } from '@mui/icons-material';
 import * as pdfjsLib from 'pdfjs-dist';
 
+// Set the workerSrc to the CDN URL
+pdfjsLib.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@3.4.120/build/pdf.worker.min.js`;
+
 function UploadSection({ onUploadComplete, awsCredentials }) {
   const [selectedFile, setSelectedFile] = useState(null);
   const [isUploading, setIsUploading] = useState(false);
@@ -78,6 +81,7 @@ function UploadSection({ onUploadComplete, awsCredentials }) {
       setSelectedFile(null);
     } catch (error) {
       console.error('Error uploading file:', error);
+      alert('Error uploading file. Please try again.');
     } finally {
       setIsUploading(false);
     }
