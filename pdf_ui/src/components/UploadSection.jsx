@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
-import { Box, Typography, TextField, Tooltip, IconButton } from '@mui/material';
+import { Box, Typography, TextField, Tooltip, IconButton, Snackbar, Alert } from '@mui/material';
 import { LoadingButton } from '@mui/lab';
 import { motion } from 'framer-motion';
 import { CircularProgress } from '@mui/material';
@@ -10,18 +10,29 @@ import { PDFDocument } from 'pdf-lib'; // Import from pdf-lib
 function UploadSection({ onUploadComplete, awsCredentials }) {
   const [selectedFile, setSelectedFile] = useState(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
+  const [openSnackbar, setOpenSnackbar] = useState(false);
+  
+  const fileInputRef = useRef(null);
 
   const handleFileInput = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
 
+    // Reset any existing error messages
+    setErrorMessage('');
+
     if (file.type !== 'application/pdf') {
-      alert('Only PDF files are allowed.');
+      setErrorMessage('Only PDF files are allowed.');
+      setOpenSnackbar(true);
+      resetFileInput();
       return;
     }
 
     if (file.size > 25 * 1024 * 1024) {
-      alert('File size exceeds 25 MB limit.');
+      setErrorMessage('File size exceeds 25 MB limit.');
+      setOpenSnackbar(true);
+      resetFileInput();
       return;
     }
 
@@ -31,24 +42,37 @@ function UploadSection({ onUploadComplete, awsCredentials }) {
       const numPages = pdfDoc.getPageCount();
 
       if (numPages > 10) {
-        alert('PDF file cannot exceed 10 pages.');
+        setErrorMessage('PDF file cannot exceed 10 pages.');
+        setOpenSnackbar(true);
+        resetFileInput();
         return;
       }
 
       setSelectedFile(file);
     } catch (error) {
       console.error('Error reading PDF file:', error);
-      alert('Unable to read the PDF file.');
+      setErrorMessage('Unable to read the PDF file.');
+      setOpenSnackbar(true);
+      resetFileInput();
+    }
+  };
+
+  const resetFileInput = () => {
+    setSelectedFile(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = null;
     }
   };
 
   const handleUpload = async () => {
     if (!selectedFile) {
-      alert('Please select a PDF file before uploading.');
+      setErrorMessage('Please select a PDF file before uploading.');
+      setOpenSnackbar(true);
       return;
     }
     if (!awsCredentials) {
-      alert('AWS credentials not available yet. Please wait...');
+      setErrorMessage('AWS credentials not available yet. Please wait...');
+      setOpenSnackbar(true);
       return;
     }
 
@@ -74,13 +98,21 @@ function UploadSection({ onUploadComplete, awsCredentials }) {
       await client.send(command);
 
       onUploadComplete(selectedFile.name);
-      setSelectedFile(null);
+      resetFileInput();
     } catch (error) {
       console.error('Error uploading file:', error);
-      alert('Error uploading file. Please try again.');
+      setErrorMessage('Error uploading file. Please try again.');
+      setOpenSnackbar(true);
     } finally {
       setIsUploading(false);
     }
+  };
+
+  const handleCloseSnackbar = (event, reason) => {
+    if (reason === 'clickaway') {
+      return;
+    }
+    setOpenSnackbar(false);
   };
 
   return (
@@ -115,6 +147,7 @@ function UploadSection({ onUploadComplete, awsCredentials }) {
           type="file"
           accept=".pdf"
           onChange={handleFileInput}
+          inputRef={fileInputRef}
           inputProps={{ style: { display: 'block', margin: '1rem auto' } }}
         />
         <LoadingButton
@@ -141,6 +174,18 @@ function UploadSection({ onUploadComplete, awsCredentials }) {
           {isUploading ? 'Uploading...' : selectedFile ? `Upload ${selectedFile.name}` : 'Please Upload A PDF'}
         </LoadingButton>
       </Box>
+
+      {/* Snackbar for error messages */}
+      <Snackbar
+        open={openSnackbar}
+        autoHideDuration={6000}
+        onClose={handleCloseSnackbar}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        <Alert onClose={handleCloseSnackbar} severity="error" sx={{ width: '100%' }}>
+          {errorMessage}
+        </Alert>
+      </Snackbar>
     </motion.div>
   );
 }
