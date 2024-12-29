@@ -5,10 +5,7 @@ import { LoadingButton } from '@mui/lab';
 import { motion } from 'framer-motion';
 import { CircularProgress } from '@mui/material';
 import { InfoOutlined } from '@mui/icons-material';
-import * as pdfjsLib from 'pdfjs-dist';
-
-// Set the workerSrc to the CDN URL
-pdfjsLib.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@3.4.120/build/pdf.worker.min.js`;
+import { PDFDocument } from 'pdf-lib'; // Import from pdf-lib
 
 function UploadSection({ onUploadComplete, awsCredentials }) {
   const [selectedFile, setSelectedFile] = useState(null);
@@ -29,17 +26,16 @@ function UploadSection({ onUploadComplete, awsCredentials }) {
     }
 
     try {
-      const fileReader = new FileReader();
-      fileReader.onload = async function () {
-        const typedArray = new Uint8Array(this.result);
-        const pdf = await pdfjsLib.getDocument(typedArray).promise;
-        if (pdf.numPages > 10) {
-          alert('PDF file cannot exceed 10 pages.');
-          return;
-        }
-        setSelectedFile(file);
-      };
-      fileReader.readAsArrayBuffer(file);
+      const arrayBuffer = await file.arrayBuffer();
+      const pdfDoc = await PDFDocument.load(arrayBuffer);
+      const numPages = pdfDoc.getPageCount();
+
+      if (numPages > 10) {
+        alert('PDF file cannot exceed 10 pages.');
+        return;
+      }
+
+      setSelectedFile(file);
     } catch (error) {
       console.error('Error reading PDF file:', error);
       alert('Unable to read the PDF file.');
