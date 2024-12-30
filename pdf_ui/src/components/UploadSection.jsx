@@ -180,7 +180,7 @@ function UploadSection({ onUploadComplete, awsCredentials }) {
         open={openSnackbar}
         autoHideDuration={6000}
         onClose={handleCloseSnackbar}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
       >
         <Alert onClose={handleCloseSnackbar} severity="error" sx={{ width: '100%' }}>
           {errorMessage}
