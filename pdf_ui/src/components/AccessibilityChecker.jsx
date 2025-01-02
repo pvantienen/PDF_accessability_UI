@@ -5,6 +5,7 @@ import {
   Dialog,
   DialogTitle,
   DialogContent,
+  DialogActions,
   Accordion,
   AccordionSummary,
   AccordionDetails,
@@ -16,21 +17,17 @@ import {
   TableBody,
   CircularProgress,
   Box,
+  IconButton,
+  Chip,
 } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import CloseIcon from '@mui/icons-material/Close';
 
-// 1) Import AWS S3-related dependencies
 import { S3Client, HeadObjectCommand, GetObjectCommand } from '@aws-sdk/client-s3';
 
-// If using environment variables for region & bucket:
 const region = process.env.REACT_APP_BUCKET_REGION;
 const bucketName = process.env.REACT_APP_BUCKET_NAME;
 
-/**
- * AccessibilityChecker:
- * - Polls S3 for before/after JSON accessibility reports
- * - Displays them in a Dialog with summary and detailed results
- */
 function AccessibilityChecker({ filename, awsCredentials }) {
   const [open, setOpen] = useState(false);
   const [beforeReport, setBeforeReport] = useState(null);
@@ -38,74 +35,42 @@ function AccessibilityChecker({ filename, awsCredentials }) {
   const [isPolling, setIsPolling] = useState(false);
   const [pollingIntervalId, setPollingIntervalId] = useState(null);
 
-  // Build the S3 paths
-  // BEFORE: temp/{fileKeyWithoutExtension}/accessability-report/{fileKeyWithoutExtension}_accessibility_report_before_remidiation.json
-  // AFTER:  temp/{fileKeyWithoutExtension}/accessability-report/COMPLIANT_{fileKeyWithoutExtension}_accessibility_report_after_remidiation.json
-  const fileKeyWithoutExtension = filename
-    ? filename.replace(/\.pdf$/i, '')
-    : '';
-   
+  const fileKeyWithoutExtension = filename ? filename.replace(/\.pdf$/i, '') : '';
   const beforeReportKey = `temp/${fileKeyWithoutExtension}/accessability-report/${fileKeyWithoutExtension}_accessibility_report_before_remidiation.json`;
   const afterReportKey = `temp/${fileKeyWithoutExtension}/accessability-report/COMPLIANT_${fileKeyWithoutExtension}_accessibility_report_after_remidiation.json`;
 
-  // Create an S3 client instance once (could also do this inside each fetch function)
   const s3 = new S3Client({
-            region,
-            credentials: {
-              accessKeyId: awsCredentials?.accessKeyId,
-              secretAccessKey: awsCredentials?.secretAccessKey,
-              sessionToken: awsCredentials?.sessionToken,
-            },
-          });
+    region,
+    credentials: {
+      accessKeyId: awsCredentials?.accessKeyId,
+      secretAccessKey: awsCredentials?.secretAccessKey,
+      sessionToken: awsCredentials?.sessionToken,
+    },
+  });
 
-  // ---- Helper to fetch JSON from S3 ----
   const fetchJsonFromS3 = async (key) => {
-    // Check if object exists via HeadObject
-    await s3.send(
-      new HeadObjectCommand({
-        Bucket: bucketName,
-        Key: key,
-      })
-    );
-    // Download the JSON
-    const getObjRes = await s3.send(
-      new GetObjectCommand({
-        Bucket: bucketName,
-        Key: key,
-      })
-    );
-    // Convert stream to string, then parse
-    // transformToString is available in the AWS SDK for JS v3
+    await s3.send(new HeadObjectCommand({ Bucket: bucketName, Key: key }));
+    const getObjRes = await s3.send(new GetObjectCommand({ Bucket: bucketName, Key: key }));
     const bodyString = await getObjRes.Body.transformToString();
     return JSON.parse(bodyString);
   };
 
-  // ---- OPEN DIALOG & START POLLING ----
   const handleOpen = () => {
     setOpen(true);
     setIsPolling(true);
-
-    // 1) Immediately try to fetch BEFORE report
     fetchBeforeReport();
-
-    // 2) Start polling for AFTER report every 15s
-    const intervalId = setInterval(() => {
-      fetchAfterReport();
-    }, 15000);
+    const intervalId = setInterval(fetchAfterReport, 15000);
     setPollingIntervalId(intervalId);
   };
 
-  // ---- CLOSE DIALOG & CLEAN UP ----
   const handleClose = () => {
     setOpen(false);
     clearInterval(pollingIntervalId);
     setIsPolling(false);
   };
 
-  // ---- FETCH BEFORE REPORT FROM S3 ----
   const fetchBeforeReport = async () => {
     try {
-      // Attempt to fetch the "before" JSON from S3
       const data = await fetchJsonFromS3(beforeReportKey);
       setBeforeReport(data);
     } catch (error) {
@@ -113,45 +78,38 @@ function AccessibilityChecker({ filename, awsCredentials }) {
     }
   };
 
-  // ---- FETCH AFTER REPORT FROM S3 ----
   const fetchAfterReport = async () => {
     try {
-      // Attempt to fetch the "after" JSON from S3
       const data = await fetchJsonFromS3(afterReportKey);
       setAfterReport(data);
-
-      // Stop polling once AFTER report is available
       clearInterval(pollingIntervalId);
       setIsPolling(false);
     } catch (error) {
-      // It's fine if AFTER is not ready yet, keep polling
       console.log('AFTER report not ready. Continuing to poll...', error);
     }
   };
 
-  // ---- CLEAN UP INTERVAL ON UNMOUNT ----
   useEffect(() => {
     return () => {
-      if (pollingIntervalId) {
-        clearInterval(pollingIntervalId);
-      }
+      if (pollingIntervalId) clearInterval(pollingIntervalId);
     };
   }, [pollingIntervalId]);
 
-  // ---- RENDER THE SUMMARY TABLE ----
   const renderSummary = (report, label) => {
     if (!report) return null;
     const { Summary } = report;
     if (!Summary) return null;
 
     return (
-      <Box sx={{ margin: '1rem 0' }}>
-        <Typography variant="h6">{`${label} Summary`}</Typography>
-        <Table size="small">
-          <TableHead>
+      <Box sx={{ margin: '1rem 0', flex: 1 }}>
+        <Typography variant="h6" sx={{ color: '#1976d2', fontWeight: 'bold' }}>
+          {`${label} Summary`}
+        </Typography>
+        <Table size="small" sx={{ border: '1px solid #ddd', borderRadius: 2 }}>
+          <TableHead sx={{ backgroundColor: '#f5f5f5' }}>
             <TableRow>
               <TableCell>Description</TableCell>
-              <TableCell>Needs manual check</TableCell>
+              <TableCell>Needs Manual Check</TableCell>
               <TableCell>Passed</TableCell>
               <TableCell>Failed</TableCell>
             </TableRow>
@@ -159,9 +117,15 @@ function AccessibilityChecker({ filename, awsCredentials }) {
           <TableBody>
             <TableRow>
               <TableCell>{Summary.Description}</TableCell>
-              <TableCell>{Summary['Needs manual check']}</TableCell>
-              <TableCell>{Summary.Passed}</TableCell>
-              <TableCell>{Summary.Failed}</TableCell>
+              <TableCell>
+                <Chip label={Summary['Needs manual check']} color="warning" />
+              </TableCell>
+              <TableCell>
+                <Chip label={Summary.Passed} color="success" />
+              </TableCell>
+              <TableCell>
+                <Chip label={Summary.Failed} color="error" />
+              </TableCell>
             </TableRow>
           </TableBody>
         </Table>
@@ -169,39 +133,32 @@ function AccessibilityChecker({ filename, awsCredentials }) {
     );
   };
 
-  // ---- RENDER THE DETAILED REPORT (ACCORDION) ----
   const renderDetailedReport = () => {
-    // If we don’t have BEFORE data, display a spinner
-    if (!beforeReport) {
-      return <CircularProgress />;
-    }
+    if (!beforeReport) return <CircularProgress />;
 
-    // AFTER might still be null
     const categories = Object.keys(beforeReport['Detailed Report'] || {});
 
     return categories.map((category) => {
       const beforeItems = beforeReport['Detailed Report'][category] || [];
       const afterItems = afterReport?.['Detailed Report']?.[category] || [];
-
-      // Collect all rule names
       const allRules = new Set([
         ...beforeItems.map((item) => item.Rule),
         ...afterItems.map((item) => item.Rule),
       ]);
-
-      // Map AFTER items by rule
       const afterMap = afterItems.reduce((acc, item) => {
         acc[item.Rule] = item;
         return acc;
       }, {});
 
       return (
-        <Accordion key={category}>
-          <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-            <Typography variant="subtitle1">{category}</Typography>
+        <Accordion key={category} sx={{ border: '1px solid #ddd', margin: '0.5rem 0' }}>
+          <AccordionSummary expandIcon={<ExpandMoreIcon />} sx={{ backgroundColor: '#e3f2fd' }}>
+            <Typography variant="subtitle1" sx={{ fontWeight: 'bold' }}>
+              {category}
+            </Typography>
           </AccordionSummary>
           <AccordionDetails>
-            <Table size="small">
+            <Table size="small" sx={{ border: '1px solid #ddd' }}>
               <TableHead>
                 <TableRow>
                   <TableCell>Rule</TableCell>
@@ -219,12 +176,32 @@ function AccessibilityChecker({ filename, awsCredentials }) {
                     <TableRow key={rule}>
                       <TableCell>{rule}</TableCell>
                       <TableCell>
-                        {afterItem
-                          ? afterItem.Description
-                          : beforeItem?.Description}
+                        {afterItem ? afterItem.Description : beforeItem?.Description}
                       </TableCell>
-                      <TableCell>{beforeItem?.Status || '—'}</TableCell>
-                      <TableCell>{afterItem?.Status || '—'}</TableCell>
+                      <TableCell>
+                        <Chip
+                          label={beforeItem?.Status || '—'}
+                          color={
+                            beforeItem?.Status === 'Passed'
+                              ? 'success'
+                              : beforeItem?.Status === 'Failed'
+                              ? 'error'
+                              : 'warning'
+                          }
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <Chip
+                          label={afterItem?.Status || '—'}
+                          color={
+                            afterItem?.Status === 'Passed'
+                              ? 'success'
+                              : afterItem?.Status === 'Failed'
+                              ? 'error'
+                              : 'warning'
+                          }
+                        />
+                      </TableCell>
                     </TableRow>
                   );
                 })}
@@ -238,39 +215,41 @@ function AccessibilityChecker({ filename, awsCredentials }) {
 
   return (
     <>
-      {/* Only show this button if a filename exists */}
       {filename && (
-        <Button 
-          variant="outlined" 
-          color="info" 
-          onClick={handleOpen}
-          sx={{ marginTop: 2 }}
-        >
+        <Button variant="contained" color="primary" onClick={handleOpen} sx={{ marginTop: 2 }}>
           Check PDF Accessibility
         </Button>
       )}
 
       <Dialog open={open} onClose={handleClose} fullWidth maxWidth="lg">
-        <DialogTitle>Accessibility Reports (Powered by Adobe Accessibility Checker)</DialogTitle>
+        <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          Accessibility Reports
+          <IconButton onClick={handleClose}>
+            <CloseIcon />
+          </IconButton>
+        </DialogTitle>
         <DialogContent dividers>
-          {/* Summaries side by side */}
           <Box sx={{ display: 'flex', gap: '2rem', flexWrap: 'wrap' }}>
             {renderSummary(beforeReport, 'Before')}
             {renderSummary(afterReport, 'After')}
           </Box>
 
-          <Typography variant="h5" sx={{ marginTop: '2rem' }}>
+          <Typography variant="h5" sx={{ marginTop: '2rem', color: '#1565c0', fontWeight: 'bold' }}>
             Detailed Report
           </Typography>
           {isPolling && !afterReport && (
             <Typography variant="body2" color="textSecondary">
-              Generation of Remediated PDF report in progress(Updating every 15s)
+              Generating remediated PDF report (updating every 15s)...
             </Typography>
           )}
 
-          {/* Category-specific details */}
           <Box sx={{ marginTop: '1rem' }}>{renderDetailedReport()}</Box>
         </DialogContent>
+        <DialogActions>
+          <Button onClick={handleClose} color="secondary">
+            Close
+          </Button>
+        </DialogActions>
       </Dialog>
     </>
   );
