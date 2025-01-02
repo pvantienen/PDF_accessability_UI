@@ -223,7 +223,7 @@ function AccessibilityChecker({ filename, awsCredentials }) {
 
       <Dialog open={open} onClose={handleClose} fullWidth maxWidth="lg">
         <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          Accessibility Reports
+          Accessibility Reports (Powered By Adobe Accessibility Checker)
           <IconButton onClick={handleClose}>
             <CloseIcon />
           </IconButton>
