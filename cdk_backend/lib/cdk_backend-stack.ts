@@ -176,6 +176,7 @@ export class CdkBackendStack extends cdk.Stack {
       },
     });
     const hostedUiDomain = `https://pdf-ui-auth.auth.${this.region}.amazoncognito.com/login/continue?client_id=${userPoolClient.userPoolClientId}&redirect_uri=https%3A%2F%2Fmain.${amplifyApp.appId}.amplifyapp.com&response_type=code&scope=email+openid+phone+profile`
+    
     // ------------------ Pass environment variables to Amplify ------------------
     mainBranch.addEnvironment('REACT_APP_BUCKET_NAME', bucket.bucketName);
     mainBranch.addEnvironment('REACT_APP_BUCKET_REGION', this.region);

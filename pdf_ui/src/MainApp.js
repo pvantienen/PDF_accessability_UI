@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from 'react-oidc-context';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Container, Box, Typography } from '@mui/material';
+import { Container, Box, Typography, Button } from '@mui/material';
 import { ThemeProvider } from '@mui/material/styles';
 import Header from './components/Header';
 import UploadSection from './components/UploadSection';
@@ -10,7 +10,10 @@ import DownloadSection from './components/DownloadSection';
 import LeftNav from './components/LeftNav';
 import ElapsedTimer from './components/ElapsedTimer';
 import theme from './theme';
-import { Button } from '@mui/material';
+
+// NEW import
+import AccessibilityReport from './components/AccessibilityReport';
+
 // Import the CustomCredentialsProvider
 import CustomCredentialsProvider from './utilities/CustomCredentialsProvider';
 
@@ -19,11 +22,14 @@ function MainApp({ isLoggingOut, setIsLoggingOut }) {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Store AWS credentials & upload states
+  // AWS & file states
   const [awsCredentials, setAwsCredentials] = useState(null);
   const [uploadedFileName, setUploadedFileName] = useState('');
   const [uploadedAt, setUploadedAt] = useState(null);
   const [isFileReady, setIsFileReady] = useState(false);
+
+  // NEW: control whether AccessibilityReport is open
+  const [reportOpen, setReportOpen] = useState(false);
 
   // Fetch credentials once user is authenticated
   useEffect(() => {
@@ -60,12 +66,10 @@ function MainApp({ isLoggingOut, setIsLoggingOut }) {
   };
 
   const handleFileReady = () => {
-    // When the DownloadSection confirms file is ready
     setIsFileReady(true);
   };
 
   const handleNewUpload = () => {
-    // Reset all states to restart the process
     setUploadedFileName('');
     setUploadedAt(null);
     setIsFileReady(false);
@@ -73,15 +77,12 @@ function MainApp({ isLoggingOut, setIsLoggingOut }) {
 
   const handleSignOut = async () => {
     try {
-      // First remove the local user
       await auth.removeUser();
-
-      setIsLoggingOut(true); // Update logout state
-      navigate('/logout');    // Navigate to logout page
-      // The actual signoutRedirect is handled in LogoutPage
+      setIsLoggingOut(true);
+      navigate('/logout');
     } catch (error) {
       console.error('Error during sign out:', error);
-      setIsLoggingOut(false); // Reset logout state in case of error
+      setIsLoggingOut(false);
     }
   };
 
@@ -93,7 +94,7 @@ function MainApp({ isLoggingOut, setIsLoggingOut }) {
     if (auth.error.message.includes('No matching state found')) {
       console.log('Detected invalid or mismatched OIDC state. Redirecting to login...');
       auth.removeUser().then(() => {
-        auth.signinRedirect(); // Force re-auth
+        auth.signinRedirect();
       });
       return null;
     }
@@ -145,6 +146,7 @@ function MainApp({ isLoggingOut, setIsLoggingOut }) {
                 onUploadComplete={handleUploadComplete}
                 awsCredentials={awsCredentials}
               />
+
               {uploadedFileName && (
                 <Button
                   variant="outlined"
@@ -184,6 +186,25 @@ function MainApp({ isLoggingOut, setIsLoggingOut }) {
                 <DownloadSection
                   filename={uploadedFileName}
                   onFileReady={handleFileReady}
+                  awsCredentials={awsCredentials}
+                />
+
+                {/* NEW BUTTON to check PDF Accessibility and show the two JSON reports */}
+                <Box sx={{ marginTop: 2 }}>
+                  <Button
+                    variant="contained"
+                    color="primary"
+                    onClick={() => setReportOpen(true)}
+                  >
+                    Check PDF Accessibility
+                  </Button>
+                </Box>
+
+                {/* The AccessibilityReport component (Dialog) */}
+                <AccessibilityReport
+                  open={reportOpen}
+                  onClose={() => setReportOpen(false)}
+                  filename={uploadedFileName}
                   awsCredentials={awsCredentials}
                 />
               </Box>
