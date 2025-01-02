@@ -12,7 +12,7 @@ import ElapsedTimer from './components/ElapsedTimer';
 import theme from './theme';
 
 // NEW import
-import AccessibilityReport from './components/AccessibilityReport';
+import AccessibilityChecker from './components/AccessibilityChecker';
 
 // Import the CustomCredentialsProvider
 import CustomCredentialsProvider from './utilities/CustomCredentialsProvider';
@@ -201,7 +201,7 @@ function MainApp({ isLoggingOut, setIsLoggingOut }) {
                 </Box>
 
                 {/* The AccessibilityReport component (Dialog) */}
-                <AccessibilityReport
+                <AccessibilityChecker
                   open={reportOpen}
                   onClose={() => setReportOpen(false)}
                   filename={uploadedFileName}
