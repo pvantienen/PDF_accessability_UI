@@ -190,16 +190,6 @@ function MainApp({ isLoggingOut, setIsLoggingOut }) {
                 />
 
                 {/* NEW BUTTON to check PDF Accessibility and show the two JSON reports */}
-                <Box sx={{ marginTop: 2 }}>
-                  <Button
-                    variant="contained"
-                    color="primary"
-                    onClick={() => setReportOpen(true)}
-                  >
-                    Check PDF Accessibility
-                  </Button>
-                </Box>
-
                 {/* The AccessibilityReport component (Dialog) */}
                 <AccessibilityChecker
                   open={reportOpen}

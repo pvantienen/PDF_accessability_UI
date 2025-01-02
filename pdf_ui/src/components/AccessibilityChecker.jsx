@@ -251,7 +251,7 @@ function AccessibilityChecker({ filename, awsCredentials }) {
       )}
 
       <Dialog open={open} onClose={handleClose} fullWidth maxWidth="lg">
-        <DialogTitle>Accessibility Reports</DialogTitle>
+        <DialogTitle>Accessibility Reports (Powered by Adobe Accessibility Checker)</DialogTitle>
         <DialogContent dividers>
           {/* Summaries side by side */}
           <Box sx={{ display: 'flex', gap: '2rem', flexWrap: 'wrap' }}>
@@ -264,7 +264,7 @@ function AccessibilityChecker({ filename, awsCredentials }) {
           </Typography>
           {isPolling && !afterReport && (
             <Typography variant="body2" color="textSecondary">
-              Polling for AFTER report... (every 15s)
+              Generation of Remediated PDF report in progress(Updating every 15s)
             </Typography>
           )}
 
