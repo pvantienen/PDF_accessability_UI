@@ -23,15 +23,31 @@ import {
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import CloseIcon from '@mui/icons-material/Close';
 
-import { S3Client, HeadObjectCommand, GetObjectCommand } from '@aws-sdk/client-s3';
+import {
+  S3Client,
+  HeadObjectCommand,
+  GetObjectCommand,
+} from '@aws-sdk/client-s3';
+import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 
 const region = process.env.REACT_APP_BUCKET_REGION;
 const bucketName = process.env.REACT_APP_BUCKET_NAME;
 
 function AccessibilityChecker({ filename, awsCredentials }) {
   const [open, setOpen] = useState(false);
+
+  // Reports in JSON form
   const [beforeReport, setBeforeReport] = useState(null);
   const [afterReport, setAfterReport] = useState(null);
+
+  // Signed URLs for downloading the JSON reports
+  const [beforeReportUrl, setBeforeReportUrl] = useState(null);
+  const [afterReportUrl, setAfterReportUrl] = useState(null);
+
+  // Loading states for generating pre-signed URLs
+  const [isBeforeUrlLoading, setIsBeforeUrlLoading] = useState(false);
+  const [isAfterUrlLoading, setIsAfterUrlLoading] = useState(false);
+
   const [isPolling, setIsPolling] = useState(false);
   const [pollingIntervalId, setPollingIntervalId] = useState(null);
 
@@ -48,6 +64,9 @@ function AccessibilityChecker({ filename, awsCredentials }) {
     },
   });
 
+  /**
+   * Utility to fetch the JSON file from S3 (assuming it exists).
+   */
   const fetchJsonFromS3 = async (key) => {
     await s3.send(new HeadObjectCommand({ Bucket: bucketName, Key: key }));
     const getObjRes = await s3.send(new GetObjectCommand({ Bucket: bucketName, Key: key }));
@@ -55,6 +74,62 @@ function AccessibilityChecker({ filename, awsCredentials }) {
     return JSON.parse(bodyString);
   };
 
+  /**
+   * Generate a presigned URL to directly download the JSON report from S3.
+   */
+  const generatePresignedUrl = async (key) => {
+    const command = new GetObjectCommand({ Bucket: bucketName, Key: key });
+    // expiresIn is in seconds; adjust as needed (e.g., 1 hour = 3600)
+    return await getSignedUrl(s3, command, { expiresIn: 3600 });
+  };
+
+  /**
+   * Fetch the "before" report
+   */
+  const fetchBeforeReport = async () => {
+    try {
+      // First fetch the JSON data
+      const data = await fetchJsonFromS3(beforeReportKey);
+      setBeforeReport(data);
+
+      // Then generate a presigned URL for that JSON file
+      setIsBeforeUrlLoading(true);
+      const presignedUrl = await generatePresignedUrl(beforeReportKey);
+      setBeforeReportUrl(presignedUrl);
+    } catch (error) {
+      console.error('Error fetching BEFORE report from S3:', error);
+    } finally {
+      setIsBeforeUrlLoading(false);
+    }
+  };
+
+  /**
+   * Poll for the "after" report until it is available, then clear the interval
+   */
+  const fetchAfterReport = async () => {
+    try {
+      // Fetch the JSON data
+      const data = await fetchJsonFromS3(afterReportKey);
+      setAfterReport(data);
+
+      // Generate a presigned URL for downloading the AFTER report
+      setIsAfterUrlLoading(true);
+      const presignedUrl = await generatePresignedUrl(afterReportKey);
+      setAfterReportUrl(presignedUrl);
+
+      // Stop polling since file now exists
+      clearInterval(pollingIntervalId);
+      setIsPolling(false);
+    } catch (error) {
+      console.log('AFTER report not ready. Continuing to poll...', error);
+    } finally {
+      setIsAfterUrlLoading(false);
+    }
+  };
+
+  /**
+   * Open the dialog, fetch the "before" report, and start polling for the "after" report.
+   */
   const handleOpen = () => {
     setOpen(true);
     setIsPolling(true);
@@ -63,38 +138,27 @@ function AccessibilityChecker({ filename, awsCredentials }) {
     setPollingIntervalId(intervalId);
   };
 
+  /**
+   * Close the dialog, clearing any polling intervals.
+   */
   const handleClose = () => {
     setOpen(false);
     clearInterval(pollingIntervalId);
     setIsPolling(false);
   };
 
-  const fetchBeforeReport = async () => {
-    try {
-      const data = await fetchJsonFromS3(beforeReportKey);
-      setBeforeReport(data);
-    } catch (error) {
-      console.error('Error fetching BEFORE report from S3:', error);
-    }
-  };
-
-  const fetchAfterReport = async () => {
-    try {
-      const data = await fetchJsonFromS3(afterReportKey);
-      setAfterReport(data);
-      clearInterval(pollingIntervalId);
-      setIsPolling(false);
-    } catch (error) {
-      console.log('AFTER report not ready. Continuing to poll...', error);
-    }
-  };
-
+  /**
+   * Cleanup polling interval on unmount
+   */
   useEffect(() => {
     return () => {
       if (pollingIntervalId) clearInterval(pollingIntervalId);
     };
   }, [pollingIntervalId]);
 
+  /**
+   * Renders a summary table (Before/After) if available
+   */
   const renderSummary = (report, label) => {
     if (!report) return null;
     const { Summary } = report;
@@ -133,11 +197,14 @@ function AccessibilityChecker({ filename, awsCredentials }) {
     );
   };
 
+  /**
+   * Renders the detailed report comparison table
+   */
   const renderDetailedReport = () => {
+    // If the BEFORE report isn't fetched yet, show a spinner
     if (!beforeReport) return <CircularProgress />;
 
     const categories = Object.keys(beforeReport['Detailed Report'] || {});
-
     return categories.map((category) => {
       const beforeItems = beforeReport['Detailed Report'][category] || [];
       const afterItems = afterReport?.['Detailed Report']?.[category] || [];
@@ -223,7 +290,7 @@ function AccessibilityChecker({ filename, awsCredentials }) {
 
       <Dialog open={open} onClose={handleClose} fullWidth maxWidth="lg">
         <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          Accessibility Reports (Powered By Adobe Accessibility Checker)
+          Accessibility Reports (Results By Adobe Accessibility Checker)
           <IconButton onClick={handleClose}>
             <CloseIcon />
           </IconButton>
@@ -245,8 +312,31 @@ function AccessibilityChecker({ filename, awsCredentials }) {
 
           <Box sx={{ marginTop: '1rem' }}>{renderDetailedReport()}</Box>
         </DialogContent>
-        <DialogActions>
-          <Button onClick={handleClose} color="secondary">
+
+        <DialogActions sx={{ display: 'flex', justifyContent: 'flex-end', gap: 2, padding: '1rem' }}>
+          {/* Download BEFORE JSON button */}
+          <Button
+            variant="outlined"
+            color="primary"
+            disabled={!beforeReportUrl || isBeforeUrlLoading}
+            onClick={() => window.open(beforeReportUrl, '_blank')}
+            startIcon={isBeforeUrlLoading && <CircularProgress size={16} />}
+          >
+            Download Before Report
+          </Button>
+
+          {/* Download AFTER JSON button */}
+          <Button
+            variant="outlined"
+            color="primary"
+            disabled={!afterReportUrl || isAfterUrlLoading}
+            onClick={() => window.open(afterReportUrl, '_blank')}
+            startIcon={isAfterUrlLoading && <CircularProgress size={16} />}
+          >
+            Download After Report
+          </Button>
+
+          <Button onClick={handleClose} color="secondary" variant="contained">
             Close
           </Button>
         </DialogActions>
