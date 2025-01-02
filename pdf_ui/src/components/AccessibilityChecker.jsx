@@ -40,12 +40,13 @@ function AccessibilityChecker({ filename, awsCredentials }) {
 
   // Build the S3 paths
   // BEFORE: temp/{fileKeyWithoutExtension}/accessability-report/{fileKeyWithoutExtension}_accessibility_report_before_remidiation.json
-  // AFTER:  temp/{fileKeyWithoutExtension}/accessability-report/{fileKeyWithoutExtension}_accessibility_report_after_remidiation.json
+  // AFTER:  temp/{fileKeyWithoutExtension}/accessability-report/COMPLIANT_{fileKeyWithoutExtension}_accessibility_report_after_remidiation.json
   const fileKeyWithoutExtension = filename
     ? filename.replace(/\.pdf$/i, '')
     : '';
+   
   const beforeReportKey = `temp/${fileKeyWithoutExtension}/accessability-report/${fileKeyWithoutExtension}_accessibility_report_before_remidiation.json`;
-  const afterReportKey = `temp/${fileKeyWithoutExtension}/accessability-report/${fileKeyWithoutExtension}_accessibility_report_after_remidiation.json`;
+  const afterReportKey = `temp/${fileKeyWithoutExtension}/accessability-report/COMPLIANT_${fileKeyWithoutExtension}_accessibility_report_after_remidiation.json`;
 
   // Create an S3 client instance once (could also do this inside each fetch function)
   const s3 = new S3Client({
