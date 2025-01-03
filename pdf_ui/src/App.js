@@ -1,3 +1,4 @@
+// App.jsx
 import React, { useState } from 'react';
 import {
   BrowserRouter as Router,
@@ -6,7 +7,7 @@ import {
   Navigate,
 } from 'react-router-dom';
 import { ThemeProvider } from '@mui/material/styles';
-import { AuthProvider } from 'react-oidc-context';
+import { AuthProvider, useAuth } from 'react-oidc-context';
 
 import theme from './theme';
 import { UserPoolClientId, HostedUIUrl, Authority } from './utilities/constants';
@@ -24,37 +25,57 @@ const cognitoAuthConfig = {
   scope: 'email openid phone profile',
 };
 
-function App() {
+function AppRoutes() {
+  const auth = useAuth();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
 
+  if (auth.isLoading) {
+    return <div>Loading authentication status...</div>;
+  }
+
+  if (auth.error) {
+    console.error('Authentication error:', auth.error);
+    return <div>Authentication Error: {auth.error.message}</div>;
+  }
+
+  return (
+    <Routes>
+      {/* Landing / Public Routes */}
+      <Route path="/home" element={<LandingPage />} />
+
+      {/* Logout Route */}
+      <Route
+        path="/logout"
+        element={<LogoutPage setIsLoggingOut={setIsLoggingOut} />}
+      />
+
+      {/* Protected App Routes */}
+      <Route
+        path="/app/*"
+        element={
+          auth.isAuthenticated ? (
+            <MainApp
+              isLoggingOut={isLoggingOut}
+              setIsLoggingOut={setIsLoggingOut}
+            />
+          ) : (
+            <Navigate to="/home" replace />
+          )
+        }
+      />
+
+      {/* Fallback: redirect unknown paths to /home */}
+      <Route path="*" element={<Navigate to="/home" replace />} />
+    </Routes>
+  );
+}
+
+function App() {
   return (
     <AuthProvider {...cognitoAuthConfig}>
       <ThemeProvider theme={theme}>
         <Router>
-          <Routes>
-            {/* Landing / Public Routes */}
-            <Route path="/home" element={<LandingPage />} />
-
-            {/* Logout Route */}
-            <Route
-              path="/logout"
-              element={<LogoutPage setIsLoggingOut={setIsLoggingOut} />}
-            />
-
-            {/* Protected App (all other routes go here) */}
-            <Route
-              path="/app/*"
-              element={
-                <MainApp
-                  isLoggingOut={isLoggingOut}
-                  setIsLoggingOut={setIsLoggingOut}
-                />
-              }
-            />
-
-            {/* Fallback: redirect unknown paths to /home */}
-            <Route path="*" element={<Navigate to="/home" />} />
-          </Routes>
+          <AppRoutes />
         </Router>
       </ThemeProvider>
     </AuthProvider>

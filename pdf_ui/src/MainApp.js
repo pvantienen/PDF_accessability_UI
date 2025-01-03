@@ -26,7 +26,7 @@ function MainApp({ isLoggingOut, setIsLoggingOut }) {
   const [uploadedAt, setUploadedAt] = useState(null);
   const [isFileReady, setIsFileReady] = useState(false);
 
-  // NEW: control whether AccessibilityReport is open
+  // Control whether AccessibilityReport is open
   const [reportOpen, setReportOpen] = useState(false);
 
   // Fetch credentials once user is authenticated
@@ -54,6 +54,14 @@ function MainApp({ isLoggingOut, setIsLoggingOut }) {
       })();
     }
   }, [auth.isAuthenticated, auth.user]);
+
+  // Monitor authentication status within MainApp
+  useEffect(() => {
+    if (!auth.isAuthenticated && !isLoggingOut) {
+      // If user is not authenticated, redirect to /home
+      navigate('/home', { replace: true });
+    }
+  }, [auth.isAuthenticated, isLoggingOut, navigate]);
 
   // Handle events from child components
   const handleUploadComplete = (fileName) => {
@@ -84,6 +92,7 @@ function MainApp({ isLoggingOut, setIsLoggingOut }) {
     }
   };
 
+  // Handle authentication loading and errors
   if (auth.isLoading) {
     return <div>Loading...</div>;
   }
@@ -98,20 +107,6 @@ function MainApp({ isLoggingOut, setIsLoggingOut }) {
       return null;
     }
     return <div>Encountered error: {auth.error.message}</div>;
-  }
-
-  // -----------------------------------------------
-  // Instead of forcing signin redirect, route to /home if not logged in
-  // -----------------------------------------------
-  const isLogoutPath = location.pathname === '/logout' || location.pathname.includes('logout');
-  
-  // Check if the current path is the OIDC callback
-  const isCallbackPath = location.pathname === '/app';
-  
-  if (!auth.isAuthenticated && !isLogoutPath && !isLoggingOut && !isCallbackPath) {
-    // The user isn't signed in. Let's just push them to /home
-    navigate('/home');
-    return null;
   }
 
   return (
