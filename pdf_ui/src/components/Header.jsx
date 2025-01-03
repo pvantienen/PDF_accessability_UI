@@ -1,7 +1,6 @@
 // src/components/Header.js
 import React from 'react';
 import { AppBar, Toolbar, Typography, Button, Box } from '@mui/material';
-import { useAuth } from 'react-oidc-context';
 import PropTypes from 'prop-types';
 import {HEADER_BACKGROUND} from '../utilities/constants';
 
