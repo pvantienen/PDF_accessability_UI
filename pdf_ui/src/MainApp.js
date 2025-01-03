@@ -131,7 +131,7 @@ function MainApp({ isLoggingOut, setIsLoggingOut }) {
               }}
             >
               <Typography variant="h5" gutterBottom>
-                Upload PDF
+              Remediate a PDF document
               </Typography>
               <Typography
                 variant="body1"

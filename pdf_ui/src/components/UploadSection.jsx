@@ -140,7 +140,7 @@ function UploadSection({ onUploadComplete, awsCredentials }) {
           <Typography variant="h5" sx={{ color: '#333' }}>
             Upload Your PDF
           </Typography>
-          <Tooltip title="Only PDF files allowed. Max size: 25 MB. Max pages: 10.">
+          <Tooltip title="See Document Requirements in left navigation drop down">
             <IconButton>
               <InfoOutlined />
             </IconButton>

@@ -9,7 +9,7 @@ function Header({ handleSignOut }) {
     <AppBar position="static" color= {HEADER_BACKGROUND} role="banner" aria-label="Application Header">
       <Toolbar>
         <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
-          PDF Accessibility
+          PDF Accessibility Remediation
         </Typography>
         <Box>
           <Button 
