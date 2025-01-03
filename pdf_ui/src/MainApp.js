@@ -1,4 +1,3 @@
-// src/MainApp.js
 import React, { useState, useEffect } from 'react';
 import { useAuth } from 'react-oidc-context';
 import { useNavigate, useLocation } from 'react-router-dom';
@@ -36,8 +35,8 @@ function MainApp({ isLoggingOut, setIsLoggingOut }) {
       (async () => {
         try {
           const token = auth.user?.id_token;
-          // const domain = 'cognito-idp.us-east-1.amazonaws.com/us-east-1_3uP3RsAjc';
           const domain = Authority;
+
           const customCredentialsProvider = new CustomCredentialsProvider();
           customCredentialsProvider.loadFederatedLogin({ domain, token });
 
@@ -90,6 +89,7 @@ function MainApp({ isLoggingOut, setIsLoggingOut }) {
   }
 
   if (auth.error) {
+    // Example: handle "No matching state found" error
     if (auth.error.message.includes('No matching state found')) {
       console.log('Detected invalid or mismatched OIDC state. Redirecting to login...');
       auth.removeUser().then(() => {
@@ -100,13 +100,13 @@ function MainApp({ isLoggingOut, setIsLoggingOut }) {
     return <div>Encountered error: {auth.error.message}</div>;
   }
 
-  if (
-    !auth.isAuthenticated &&
-    location.pathname !== '/logout' &&
-    !location.pathname.includes('logout') &&
-    !isLoggingOut
-  ) {
-    auth.signinRedirect();
+  // -----------------------------------------------
+  // Instead of forcing signin redirect, route to /home if not logged in
+  // -----------------------------------------------
+  const isLogoutPath = location.pathname === '/logout' || location.pathname.includes('logout');
+  if (!auth.isAuthenticated && !isLogoutPath && !isLoggingOut) {
+    // The user isn't signed in. Let's just push them to /home
+    navigate('/home');
     return null;
   }
 
@@ -131,7 +131,7 @@ function MainApp({ isLoggingOut, setIsLoggingOut }) {
               }}
             >
               <Typography variant="h5" gutterBottom>
-              Remediate a PDF document
+                Remediate a PDF document
               </Typography>
               <Typography
                 variant="body1"
@@ -187,7 +187,6 @@ function MainApp({ isLoggingOut, setIsLoggingOut }) {
                   onFileReady={handleFileReady}
                   awsCredentials={awsCredentials}
                 />
-                {/* The AccessibilityReport component (Dialog) */}
                 <AccessibilityChecker
                   open={reportOpen}
                   onClose={() => setReportOpen(false)}

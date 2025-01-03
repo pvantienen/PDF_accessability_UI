@@ -1,52 +1,59 @@
-// src/App.js
 import React, { useState } from 'react';
-import { BrowserRouter as Router, Routes, Route, redirect } from 'react-router-dom';
+import {
+  BrowserRouter as Router,
+  Routes,
+  Route,
+  Navigate,
+} from 'react-router-dom';
 import { ThemeProvider } from '@mui/material/styles';
+import { AuthProvider } from 'react-oidc-context';
+
 import theme from './theme';
-import { AuthProvider } from "react-oidc-context";
-import MainApp from './MainApp';
+import { UserPoolClientId, HostedUIUrl, Authority } from './utilities/constants';
+
+import LandingPage from './pages/LandingPage';
 import LogoutPage from './components/LogoutPage';
-import {UserPoolClientId,HostedUIUrl,Authority} from './utilities/constants';
+import MainApp from './MainApp';
 
 const cognitoAuthConfig = {
-  // authority: "https://cognito-idp.us-east-1.amazonaws.com/us-east-1_3uP3RsAjc",
-  // client_id: "2r4vl1l7nmkn0u7bmne4c3tve5",
-  // redirect_uri: "https://main.d3tdsepn39r5l1.amplifyapp.com",
-  // post_logout_redirect_uri: "https://google.com",
-  authority: `https://${Authority}`,
-  client_id: UserPoolClientId,
-  redirect_uri: HostedUIUrl,
-  post_logout_redirect_uri: HostedUIUrl,
-  response_type: "code",
-  scope: "email openid phone profile",
+  authority: `https://${Authority}`,       // e.g. 'cognito-idp.us-east-1.amazonaws.com/us-east-1_XXXX'
+  client_id: UserPoolClientId,            // from your CDK outputs
+  redirect_uri: `${HostedUIUrl}/app`,            // e.g. 'https://main.XYZ.amplifyapp.com'
+  post_logout_redirect_uri: `${HostedUIUrl}/home`, // same as above or a different one
+  response_type: 'code',
+  scope: 'email openid phone profile',
 };
 
 function App() {
-  const [isLoggingOut, setIsLoggingOut] = useState(false); // Elevated state
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   return (
     <AuthProvider {...cognitoAuthConfig}>
       <ThemeProvider theme={theme}>
         <Router>
           <Routes>
-            {/* Public Route for Logout */}
-            <Route 
-              path="/logout" 
-              element={
-                <LogoutPage setIsLoggingOut={setIsLoggingOut} />
-              } 
+            {/* Landing / Public Routes */}
+            <Route path="/home" element={<LandingPage />} />
+
+            {/* Logout Route */}
+            <Route
+              path="/logout"
+              element={<LogoutPage setIsLoggingOut={setIsLoggingOut} />}
             />
 
-            {/* Protected Routes */}
-            <Route 
-              path="*" 
+            {/* Protected App (all other routes go here) */}
+            <Route
+              path="/app/*"
               element={
-                <MainApp 
-                  isLoggingOut={isLoggingOut} 
-                  setIsLoggingOut={setIsLoggingOut} 
+                <MainApp
+                  isLoggingOut={isLoggingOut}
+                  setIsLoggingOut={setIsLoggingOut}
                 />
-              } 
+              }
             />
+
+            {/* Fallback: redirect unknown paths to /home */}
+            <Route path="*" element={<Navigate to="/home" />} />
           </Routes>
         </Router>
       </ThemeProvider>

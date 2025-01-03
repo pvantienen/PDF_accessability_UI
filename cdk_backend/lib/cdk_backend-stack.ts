@@ -56,6 +56,12 @@ export class CdkBackendStack extends cdk.Stack {
         }
       }),
     });
+    
+    amplifyApp.addCustomRule({
+      source: '</^[^.]+$|\\.(?!(css|gif|ico|js|json|png|txt|html)$)([^.]+$)/>',
+      target: '/index.html',
+      status: amplify.RedirectStatus.NOT_FOUND
+    });
 
     // Create main branch
     const mainBranch = amplifyApp.addBranch('main', {
