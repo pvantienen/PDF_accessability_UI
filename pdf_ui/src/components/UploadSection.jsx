@@ -6,6 +6,7 @@ import { motion } from 'framer-motion';
 import { CircularProgress } from '@mui/material';
 import { InfoOutlined } from '@mui/icons-material';
 import { PDFDocument } from 'pdf-lib'; // Import from pdf-lib
+
 import {region,Bucket } from '../utilities/constants';
 function UploadSection({ onUploadComplete, awsCredentials }) {
   const [selectedFile, setSelectedFile] = useState(null);

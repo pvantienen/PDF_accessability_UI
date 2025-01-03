@@ -8,11 +8,11 @@ import {
 } from 'aws-amplify/auth';
 
 import { CognitoIdentity } from '@aws-sdk/client-cognito-identity';
-import { IndentityPoolId,AWS_Region } from './constants';
+import { IndentityPoolId,region } from './constants';
 
 const cognitoidentity = new CognitoIdentity({
   // region: 'us-east-1',
-  region: AWS_Region,
+  region: region,
 });
 
 class CustomCredentialsProvider {
