@@ -1,3 +1,4 @@
+// MainApp.js
 import React, { useState, useEffect } from 'react';
 import { useAuth } from 'react-oidc-context';
 import { useNavigate, useLocation } from 'react-router-dom';
@@ -12,7 +13,6 @@ import theme from './theme';
 import AccessibilityChecker from './components/AccessibilityChecker';
 
 import { Authority } from './utilities/constants';
-// Import the CustomCredentialsProvider
 import CustomCredentialsProvider from './utilities/CustomCredentialsProvider';
 
 function MainApp({ isLoggingOut, setIsLoggingOut }) {
@@ -85,7 +85,6 @@ function MainApp({ isLoggingOut, setIsLoggingOut }) {
   };
 
   if (auth.isLoading) {
-    // IMPORTANT: Don’t redirect yet; let the OIDC library finish processing
     return <div>Loading...</div>;
   }
 
@@ -105,12 +104,15 @@ function MainApp({ isLoggingOut, setIsLoggingOut }) {
   // Instead of forcing signin redirect, route to /home if not logged in
   // -----------------------------------------------
   const isLogoutPath = location.pathname === '/logout' || location.pathname.includes('logout');
-// if (!auth.isAuthenticated && !isLogoutPath && !isLoggingOut) {
-  if (!auth.isAuthenticated) {
-  // Only now do we redirect if the user is definitely NOT logged in
-  navigate('/home');
-  return null;
-}
+  
+  // Check if the current path is the OIDC callback
+  const isCallbackPath = location.pathname === '/app';
+  
+  if (!auth.isAuthenticated && !isLogoutPath && !isLoggingOut && !isCallbackPath) {
+    // The user isn't signed in. Let's just push them to /home
+    navigate('/home');
+    return null;
+  }
 
   return (
     <ThemeProvider theme={theme}>
