@@ -10,10 +10,8 @@ import DownloadSection from './components/DownloadSection';
 import LeftNav from './components/LeftNav';
 import ElapsedTimer from './components/ElapsedTimer';
 import theme from './theme';
-
-// NEW import
 import AccessibilityChecker from './components/AccessibilityChecker';
-
+import { Authority } from './utilities/constants';
 // Import the CustomCredentialsProvider
 import CustomCredentialsProvider from './utilities/CustomCredentialsProvider';
 
@@ -37,8 +35,8 @@ function MainApp({ isLoggingOut, setIsLoggingOut }) {
       (async () => {
         try {
           const token = auth.user?.id_token;
-          const domain = 'cognito-idp.us-east-1.amazonaws.com/us-east-1_3uP3RsAjc';
-
+          // const domain = 'cognito-idp.us-east-1.amazonaws.com/us-east-1_3uP3RsAjc';
+          const domain = Authority;
           const customCredentialsProvider = new CustomCredentialsProvider();
           customCredentialsProvider.loadFederatedLogin({ domain, token });
 
@@ -188,8 +186,6 @@ function MainApp({ isLoggingOut, setIsLoggingOut }) {
                   onFileReady={handleFileReady}
                   awsCredentials={awsCredentials}
                 />
-
-                {/* NEW BUTTON to check PDF Accessibility and show the two JSON reports */}
                 {/* The AccessibilityReport component (Dialog) */}
                 <AccessibilityChecker
                   open={reportOpen}

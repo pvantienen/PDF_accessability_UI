@@ -5,8 +5,9 @@ import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { motion } from 'framer-motion';
 import { LoadingButton } from '@mui/lab'; // Importing LoadingButton from MUI Lab
 import { CircularProgress } from '@mui/material';
-const bucketName = process.env.REACT_APP_BUCKET_NAME;
-const region = process.env.REACT_APP_BUCKET_REGION;
+
+
+import { Bucket,Bucket_Region, } from '../utilities/constants';
 
 export default function DownloadSection({ filename, onFileReady, awsCredentials }) {
   const [downloadUrl, setDownloadUrl] = useState('');
@@ -18,7 +19,7 @@ export default function DownloadSection({ filename, onFileReady, awsCredentials 
     const checkFileAvailability = async () => {
       try {
         const s3 = new S3Client({
-          region,
+          Bucket_Region,
           credentials: {
             accessKeyId: awsCredentials?.accessKeyId,
             secretAccessKey: awsCredentials?.secretAccessKey,
@@ -28,13 +29,13 @@ export default function DownloadSection({ filename, onFileReady, awsCredentials 
 
         await s3.send(
           new HeadObjectCommand({
-            Bucket: bucketName,
+            Bucket: Bucket,
             Key: `result/COMPLIANT_${filename}`,
           })
         );
 
         const command = new GetObjectCommand({
-          Bucket: bucketName,
+          Bucket: Bucket,
           Key: `result/COMPLIANT_${filename}`,
         });
         const url = await getSignedUrl(s3, command, { expiresIn: 300 });

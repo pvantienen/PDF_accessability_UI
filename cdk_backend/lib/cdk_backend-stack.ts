@@ -73,6 +73,7 @@ export class CdkBackendStack extends cdk.Stack {
       userPoolName: 'PDF-Accessability-User-Pool',
       selfSignUpEnabled: true,
       signInAliases: { email: true },
+
       autoVerify: { email: true },
       passwordPolicy: {
         minLength: 8,
@@ -83,7 +84,11 @@ export class CdkBackendStack extends cdk.Stack {
       },
       standardAttributes: {
         email: { required: true, mutable: true },
-        fullname: { required: true, mutable: true },
+        // fullname: { required: true, mutable: true },
+        // phoneNumber: { required: true, mutable: true },
+        //First name, Last name
+        givenName: { required: true, mutable: true },
+        familyName: { required: true, mutable: true }
       },
       customAttributes: {
         organization: new cognito.StringAttribute({ mutable: true }),
@@ -175,20 +180,22 @@ export class CdkBackendStack extends cdk.Stack {
         authenticated: authenticatedRole.roleArn,
       },
     });
-    const hostedUiDomain = `https://pdf-ui-auth.auth.${this.region}.amazoncognito.com/login/continue?client_id=${userPoolClient.userPoolClientId}&redirect_uri=https%3A%2F%2Fmain.${amplifyApp.appId}.amplifyapp.com&response_type=code&scope=email+openid+phone+profile`
-    
+    // const hostedUiDomain = `https://pdf-ui-auth.auth.${this.region}.amazoncognito.com/login/continue?client_id=${userPoolClient.userPoolClientId}&redirect_uri=https%3A%2F%2Fmain.${amplifyApp.appId}.amplifyapp.com&response_type=code&scope=email+openid+phone+profile`
+    const Authority = `cognito-idp.${this.region}.amazonaws.com/${userPool.userPoolId}`;
+
     // ------------------ Pass environment variables to Amplify ------------------
     mainBranch.addEnvironment('REACT_APP_BUCKET_NAME', bucket.bucketName);
     mainBranch.addEnvironment('REACT_APP_BUCKET_REGION', this.region);
     mainBranch.addEnvironment('REACT_APP_AWS_REGION', this.region);
     
     mainBranch.addEnvironment('REACT_APP_USER_POOL_ID', userPool.userPoolId);
-    const userPoolHostedUiDomain = hostedUiDomain;
-    mainBranch.addEnvironment('REACT_APP_USER_POOL_DOMAIN', userPoolHostedUiDomain);
+    // const userPoolHostedUiDomain = hostedUiDomain;
+    // mainBranch.addEnvironment('REACT_APP_USER_POOL_DOMAIN', userPoolHostedUiDomain);
+    mainBranch.addEnvironment('REACT_APP_AUTHORITY', Authority);
 
     mainBranch.addEnvironment('REACT_APP_USER_POOL_CLIENT_ID', userPoolClient.userPoolClientId);
     mainBranch.addEnvironment('REACT_APP_IDENTITY_POOL_ID', identityPool.ref);
-
+    mainBranch.addEnvironment('REACT_APP_HOSTED_UI_URL', appUrl);
     
 
     // Grant Amplify permission to read the secret
@@ -200,7 +207,7 @@ export class CdkBackendStack extends cdk.Stack {
     new cdk.CfnOutput(this, 'UserPoolDomain', { value: domainPrefix });
     new cdk.CfnOutput(this, 'IdentityPoolId', { value: identityPool.ref });
     new cdk.CfnOutput(this, 'AuthenticatedRole', { value: authenticatedRole.roleArn });
-    new cdk.CfnOutput(this, 'BucketName', { value: userPoolHostedUiDomain });
+    // new cdk.CfnOutput(this, 'BucketName', { value: userPoolHostedUiDomain });
     new cdk.CfnOutput(this, 'AmplifyAppURL', {
       value: appUrl,
       description: 'Amplify Application URL',

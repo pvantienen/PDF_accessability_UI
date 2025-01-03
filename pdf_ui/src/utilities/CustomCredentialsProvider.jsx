@@ -8,9 +8,11 @@ import {
 } from 'aws-amplify/auth';
 
 import { CognitoIdentity } from '@aws-sdk/client-cognito-identity';
+import { IndentityPoolId,AWS_Region } from './constants';
 
 const cognitoidentity = new CognitoIdentity({
-  region: 'us-east-1',
+  // region: 'us-east-1',
+  region: AWS_Region,
 });
 
 class CustomCredentialsProvider {
@@ -25,7 +27,8 @@ class CustomCredentialsProvider {
   async getCredentialsAndIdentityId(getCredentialsOptions) {
     try {
       const getIdResult = await cognitoidentity.getId({
-        IdentityPoolId: 'us-east-1:cd7c74c3-2277-4791-98b4-5cce14e03081',
+        // IdentityPoolId: 'us-east-1:cd7c74c3-2277-4791-98b4-5cce14e03081',
+        IdentityPoolId: IndentityPoolId,
         Logins: { [this.federatedLogin.domain]: this.federatedLogin.token },
       });
 

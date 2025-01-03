@@ -29,9 +29,8 @@ import {
   GetObjectCommand,
 } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
+import { Bucket,Bucket_Region, } from '../utilities/constants';
 
-const region = process.env.REACT_APP_BUCKET_REGION;
-const bucketName = process.env.REACT_APP_BUCKET_NAME;
 
 function AccessibilityChecker({ filename, awsCredentials }) {
   const [open, setOpen] = useState(false);
@@ -56,7 +55,7 @@ function AccessibilityChecker({ filename, awsCredentials }) {
   const afterReportKey = `temp/${fileKeyWithoutExtension}/accessability-report/COMPLIANT_${fileKeyWithoutExtension}_accessibility_report_after_remidiation.json`;
 
   const s3 = new S3Client({
-    region,
+    Bucket_Region,
     credentials: {
       accessKeyId: awsCredentials?.accessKeyId,
       secretAccessKey: awsCredentials?.secretAccessKey,
@@ -68,8 +67,8 @@ function AccessibilityChecker({ filename, awsCredentials }) {
    * Utility to fetch the JSON file from S3 (assuming it exists).
    */
   const fetchJsonFromS3 = async (key) => {
-    await s3.send(new HeadObjectCommand({ Bucket: bucketName, Key: key }));
-    const getObjRes = await s3.send(new GetObjectCommand({ Bucket: bucketName, Key: key }));
+    await s3.send(new HeadObjectCommand({ Bucket: Bucket, Key: key }));
+    const getObjRes = await s3.send(new GetObjectCommand({ Bucket: Bucket, Key: key }));
     const bodyString = await getObjRes.Body.transformToString();
     return JSON.parse(bodyString);
   };
@@ -78,7 +77,7 @@ function AccessibilityChecker({ filename, awsCredentials }) {
    * Generate a presigned URL to directly download the JSON report from S3.
    */
   const generatePresignedUrl = async (key) => {
-    const command = new GetObjectCommand({ Bucket: bucketName, Key: key });
+    const command = new GetObjectCommand({ Bucket: Bucket, Key: key });
     // expiresIn is in seconds; adjust as needed (e.g., 1 hour = 3600)
     return await getSignedUrl(s3, command, { expiresIn: 3600 });
   };

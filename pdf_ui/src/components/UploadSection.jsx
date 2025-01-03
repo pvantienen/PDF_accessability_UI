@@ -6,7 +6,7 @@ import { motion } from 'framer-motion';
 import { CircularProgress } from '@mui/material';
 import { InfoOutlined } from '@mui/icons-material';
 import { PDFDocument } from 'pdf-lib'; // Import from pdf-lib
-
+import {Bucket_Region,Bucket } from '../utilities/constants';
 function UploadSection({ onUploadComplete, awsCredentials }) {
   const [selectedFile, setSelectedFile] = useState(null);
   const [isUploading, setIsUploading] = useState(false);
@@ -80,7 +80,8 @@ function UploadSection({ onUploadComplete, awsCredentials }) {
 
     try {
       const client = new S3Client({
-        region: 'us-east-1',
+        // region: 'us-east-1',
+        region: Bucket_Region,
         credentials: {
           accessKeyId: awsCredentials.accessKeyId,
           secretAccessKey: awsCredentials.secretAccessKey,
@@ -89,7 +90,8 @@ function UploadSection({ onUploadComplete, awsCredentials }) {
       });
 
       const params = {
-        Bucket: 'pdfaccessibility-pdfaccessibilitybucket149b7021e-wurx8blwem2d',
+        // Bucket: 'pdfaccessibility-pdfaccessibilitybucket149b7021e-wurx8blwem2d',
+        Bucket: Bucket,
         Key: `pdf/${selectedFile.name}`,
         Body: selectedFile,
       };
