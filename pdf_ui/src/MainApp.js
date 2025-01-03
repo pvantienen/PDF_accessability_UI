@@ -1,7 +1,7 @@
 // MainApp.js
 import React, { useState, useEffect } from 'react';
 import { useAuth } from 'react-oidc-context';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { Container, Box, Typography, Button } from '@mui/material';
 import { ThemeProvider } from '@mui/material/styles';
 import Header from './components/Header';
@@ -18,7 +18,6 @@ import CustomCredentialsProvider from './utilities/CustomCredentialsProvider';
 function MainApp({ isLoggingOut, setIsLoggingOut }) {
   const auth = useAuth();
   const navigate = useNavigate();
-  const location = useLocation();
 
   // AWS & file states
   const [awsCredentials, setAwsCredentials] = useState(null);

@@ -15,12 +15,13 @@ import { UserPoolClientId, HostedUIUrl, Authority } from './utilities/constants'
 import LandingPage from './pages/LandingPage';
 import LogoutPage from './components/LogoutPage';
 import MainApp from './MainApp';
+import CallbackPage from './pages/CallbackPage'; // New Callback Component
 
 const cognitoAuthConfig = {
-  authority: `https://${Authority}`,       
-  client_id: UserPoolClientId,            
-  redirect_uri: `${HostedUIUrl}/app`,            
-  post_logout_redirect_uri: `${HostedUIUrl}/home`, 
+  authority: `https://${Authority}`,
+  client_id: UserPoolClientId,
+  redirect_uri: `${HostedUIUrl}/app/callback`, // Updated redirect_uri
+  post_logout_redirect_uri: `${HostedUIUrl}/home`,
   response_type: 'code',
   scope: 'email openid phone profile',
 };
@@ -42,6 +43,9 @@ function AppRoutes() {
     <Routes>
       {/* Landing / Public Routes */}
       <Route path="/home" element={<LandingPage />} />
+
+      {/* Callback Route */}
+      <Route path="/app/callback" element={<CallbackPage />} />
 
       {/* Logout Route */}
       <Route
