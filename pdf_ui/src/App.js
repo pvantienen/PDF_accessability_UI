@@ -16,6 +16,7 @@ const cognitoAuthConfig = {
   authority: `https://${Authority}`,
   client_id: UserPoolClientId,
   redirect_uri: HostedUIUrl,
+  post_logout_redirect_uri: HostedUIUrl,
   response_type: "code",
   scope: "email openid phone profile",
 };
