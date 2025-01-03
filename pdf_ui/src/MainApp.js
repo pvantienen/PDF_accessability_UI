@@ -105,7 +105,8 @@ function MainApp({ isLoggingOut, setIsLoggingOut }) {
   // Instead of forcing signin redirect, route to /home if not logged in
   // -----------------------------------------------
   const isLogoutPath = location.pathname === '/logout' || location.pathname.includes('logout');
-if (!auth.isAuthenticated && !isLogoutPath && !isLoggingOut) {
+// if (!auth.isAuthenticated && !isLogoutPath && !isLoggingOut) {
+  if (!auth.isAuthenticated) {
   // Only now do we redirect if the user is definitely NOT logged in
   navigate('/home');
   return null;
