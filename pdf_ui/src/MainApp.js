@@ -80,16 +80,16 @@ function MainApp({ isLoggingOut, setIsLoggingOut }) {
     setIsFileReady(false);
   };
 
-  const handleSignOut = async () => {
-    try {
-      await auth.removeUser();
-      setIsLoggingOut(true);
-      navigate('/logout');
-    } catch (error) {
-      console.error('Error during sign out:', error);
-      setIsLoggingOut(false);
-    }
-  };
+  // const handleSignOut = async () => {
+  //   try {
+  //     await auth.removeUser();
+  //     setIsLoggingOut(true);
+  //     navigate('/logout');
+  //   } catch (error) {
+  //     console.error('Error during sign out:', error);
+  //     setIsLoggingOut(false);
+  //   }
+  // };
 
   // Handle authentication loading and errors
   if (auth.isLoading) {
@@ -114,7 +114,7 @@ function MainApp({ isLoggingOut, setIsLoggingOut }) {
         <LeftNav />
 
         <Box sx={{ flexGrow: 1, padding: 3, backgroundColor: '#f4f6f8' }}>
-          <Header handleSignOut={handleSignOut} />
+          <Header />
 
           <Container maxWidth="lg" sx={{ marginTop: 4 }}>
             <Box

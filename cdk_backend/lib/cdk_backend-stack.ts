@@ -58,9 +58,9 @@ export class CdkBackendStack extends cdk.Stack {
     });
     
     amplifyApp.addCustomRule({
-      source: '</^[^.]+$|\\.(?!(css|gif|ico|js|json|png|txt|html)$)([^.]+$)/>',
+      source: '/<*>',
       target: '/index.html',
-      status: amplify.RedirectStatus.NOT_FOUND
+      status: amplify.RedirectStatus.TEMPORARY_REDIRECT
     });
 
     // Create main branch
