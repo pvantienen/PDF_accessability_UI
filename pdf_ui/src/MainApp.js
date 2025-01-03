@@ -85,6 +85,7 @@ function MainApp({ isLoggingOut, setIsLoggingOut }) {
   };
 
   if (auth.isLoading) {
+    // IMPORTANT: Don’t redirect yet; let the OIDC library finish processing
     return <div>Loading...</div>;
   }
 
@@ -104,11 +105,11 @@ function MainApp({ isLoggingOut, setIsLoggingOut }) {
   // Instead of forcing signin redirect, route to /home if not logged in
   // -----------------------------------------------
   const isLogoutPath = location.pathname === '/logout' || location.pathname.includes('logout');
-  if (!auth.isAuthenticated && !isLogoutPath && !isLoggingOut) {
-    // The user isn't signed in. Let's just push them to /home
-    navigate('/home');
-    return null;
-  }
+if (!auth.isAuthenticated && !isLogoutPath && !isLoggingOut) {
+  // Only now do we redirect if the user is definitely NOT logged in
+  navigate('/home');
+  return null;
+}
 
   return (
     <ThemeProvider theme={theme}>

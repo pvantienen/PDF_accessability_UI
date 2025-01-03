@@ -16,10 +16,10 @@ import LogoutPage from './components/LogoutPage';
 import MainApp from './MainApp';
 
 const cognitoAuthConfig = {
-  authority: `https://${Authority}`,       // e.g. 'cognito-idp.us-east-1.amazonaws.com/us-east-1_XXXX'
-  client_id: UserPoolClientId,            // from your CDK outputs
-  redirect_uri: `${HostedUIUrl}/app`,            // e.g. 'https://main.XYZ.amplifyapp.com'
-  post_logout_redirect_uri: `${HostedUIUrl}/home`, // same as above or a different one
+  authority: `https://${Authority}`,       
+  client_id: UserPoolClientId,            
+  redirect_uri: `${HostedUIUrl}/app`,            
+  post_logout_redirect_uri: `${HostedUIUrl}/home`, 
   response_type: 'code',
   scope: 'email openid phone profile',
 };
