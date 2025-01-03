@@ -7,7 +7,7 @@ export const primary_50 = '#e3f2fd';  // Lighter shade of primary color
 
 export const Bucket = process.env.REACT_APP_BUCKET_NAME;
 export const Bucket_Region = process.env.REACT_APP_BUCKET_REGION;
-export const AWS_Region = process.env.REACT_APP_AWS_REGION;
+export const region = process.env.REACT_APP_AWS_REGION;
 export const UserPoolId = process.env.REACT_APP_USER_POOL_ID;
 export const UserPoolClientId = process.env.REACT_APP_USER_POOL_CLIENT_ID;
 export const IndentityPoolId = process.env.REACT_APP_IDENTITY_POOL_ID;

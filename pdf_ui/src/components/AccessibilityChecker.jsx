@@ -29,7 +29,7 @@ import {
   GetObjectCommand,
 } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
-import { Bucket,AWS_Region, } from '../utilities/constants';
+import { Bucket,region, } from '../utilities/constants';
 
 
 function AccessibilityChecker({ filename, awsCredentials }) {
@@ -55,7 +55,7 @@ function AccessibilityChecker({ filename, awsCredentials }) {
   const afterReportKey = `temp/${fileKeyWithoutExtension}/accessability-report/COMPLIANT_${fileKeyWithoutExtension}_accessibility_report_after_remidiation.json`;
 
   const s3 = new S3Client({
-    AWS_Region,
+    region,
     credentials: {
       accessKeyId: awsCredentials?.accessKeyId,
       secretAccessKey: awsCredentials?.secretAccessKey,

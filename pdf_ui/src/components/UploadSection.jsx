@@ -6,7 +6,7 @@ import { motion } from 'framer-motion';
 import { CircularProgress } from '@mui/material';
 import { InfoOutlined } from '@mui/icons-material';
 import { PDFDocument } from 'pdf-lib'; // Import from pdf-lib
-import {Bucket_Region,Bucket } from '../utilities/constants';
+import {region,Bucket } from '../utilities/constants';
 function UploadSection({ onUploadComplete, awsCredentials }) {
   const [selectedFile, setSelectedFile] = useState(null);
   const [isUploading, setIsUploading] = useState(false);
@@ -81,7 +81,7 @@ function UploadSection({ onUploadComplete, awsCredentials }) {
     try {
       const client = new S3Client({
         // region: 'us-east-1',
-        region: Bucket_Region,
+        region,
         credentials: {
           accessKeyId: awsCredentials.accessKeyId,
           secretAccessKey: awsCredentials.secretAccessKey,

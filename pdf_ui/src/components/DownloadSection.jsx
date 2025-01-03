@@ -7,7 +7,7 @@ import { LoadingButton } from '@mui/lab'; // Importing LoadingButton from MUI La
 import { CircularProgress } from '@mui/material';
 
 
-import { Bucket,Bucket_Region, } from '../utilities/constants';
+import { Bucket,region, } from '../utilities/constants';
 
 export default function DownloadSection({ filename, onFileReady, awsCredentials }) {
   const [downloadUrl, setDownloadUrl] = useState('');
@@ -19,7 +19,7 @@ export default function DownloadSection({ filename, onFileReady, awsCredentials 
     const checkFileAvailability = async () => {
       try {
         const s3 = new S3Client({
-          Bucket_Region,
+          region,
           credentials: {
             accessKeyId: awsCredentials?.accessKeyId,
             secretAccessKey: awsCredentials?.secretAccessKey,
