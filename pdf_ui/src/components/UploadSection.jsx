@@ -140,7 +140,7 @@ function UploadSection({ onUploadComplete, awsCredentials }) {
           <Typography variant="h5" sx={{ color: '#333' }}>
             Upload Your PDF
           </Typography>
-          <Tooltip title="See Document Requirements in left navigation drop down">
+          <Tooltip title="See Document Requirements in left navigation" placement="right">
             <IconButton>
               <InfoOutlined />
             </IconButton>

@@ -35,13 +35,13 @@ const LeftNav = () => {
             </Box>
             <Divider sx={{ marginBottom: 2 }} />
             <Typography variant="body2" gutterBottom>
-              - Each user is limited to <strong>X PDF document uploads</strong>.
+              - Each user is limited to <strong>3 PDF document uploads</strong>.
             </Typography>
             <Typography variant="body2" gutterBottom>
-              - Documents cannot exceed <strong>XX pages</strong>.
+              - Documents cannot exceed <strong>10 pages</strong>.
             </Typography>
             <Typography variant="body2" gutterBottom>
-              - Documents must be smaller than <strong>XX MB</strong>.
+              - Documents must be smaller than <strong>25 MB</strong>.
             </Typography>
             <Typography variant="body2" gutterBottom>
               - Do not upload documents containing <strong>sensitive information</strong>.
@@ -76,7 +76,7 @@ const LeftNav = () => {
             </Typography>
             <Typography variant="body2" gutterBottom>
               <Link href="https://github.com/ASUCICREPO/PDF_Accessibility" target="_blank" rel="noopener noreferrer">
-                https://github.com/ASUCICREPO/PDF_Accessibility
+                GitHub Repo
               </Link>
             </Typography>
             <Typography variant="body2" gutterBottom>
