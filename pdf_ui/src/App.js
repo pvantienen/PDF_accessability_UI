@@ -45,7 +45,7 @@ function AppRoutes() {
       <Route path="/home" element={<LandingPage />} />
 
       {/* Callback Route */}
-      <Route path="/app/callback" element={<CallbackPage />} />
+      {/* <Route path="/app/callback" element={<CallbackPage />} /> */}
 
       {/* Logout Route */}
       <Route
