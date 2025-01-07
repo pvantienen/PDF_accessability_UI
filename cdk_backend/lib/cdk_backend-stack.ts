@@ -60,8 +60,15 @@ export class CdkBackendStack extends cdk.Stack {
     amplifyApp.addCustomRule({
       source: '/*',
       target: '/index.html',
-      status: amplify.RedirectStatus.TEMPORARY_REDIRECT
+      status: amplify.RedirectStatus.REWRITE
     });
+
+    amplifyApp.addCustomRule({
+      source: '/<*>',
+      target: '/index.html',
+      status: amplify.RedirectStatus.REWRITE
+    });
+
 
     // Create main branch
     const mainBranch = amplifyApp.addBranch('main', {

@@ -18,7 +18,7 @@ import {
 } from '@mui/material';
 import { styled } from '@mui/system';
 import ArrowForwardIosIcon from '@mui/icons-material/ArrowForwardIos';
-
+import { HostedUIUrl,UserPoolClientId,region } from '../utilities/constants';
 // --- Framer Motion ---
 import { motion } from 'framer-motion';
 
@@ -34,9 +34,10 @@ function LandingPageFramer() {
   }, [auth.isAuthenticated, auth.isLoading, navigate]);
 
   const signOutRedirect = () => {
-    const clientId = '1k5187g7kmc08ahoms38pr4rm1';
-    const logoutUri = 'http://localhost:3000/home';
-    const cognitoDomain = 'https://pdf-ui-auth.auth.us-east-1.amazoncognito.com';
+    const clientId = UserPoolClientId;
+    // const logoutUri = 'http://localhost:3000/home';
+    const logoutUri = `${HostedUIUrl}/home`;
+    const cognitoDomain = `https://pdf-ui-auth.auth.${region}.amazoncognito.com`;
     window.location.href = `${cognitoDomain}/logout?client_id=${clientId}&logout_uri=${encodeURIComponent(logoutUri)}`;
   };
 
