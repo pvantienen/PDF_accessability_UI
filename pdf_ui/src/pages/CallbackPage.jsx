@@ -8,12 +8,15 @@ function CallbackPage() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (!auth.isLoading && auth.isAuthenticated) {
-      // After successful authentication, navigate to /app/dashboard or any default route
-      navigate('/app/dashboard', { replace: true });
-    } else if (!auth.isLoading && !auth.isAuthenticated) {
-      // If authentication failed, navigate to /home
-      navigate('/home', { replace: true });
+    // Wait until the auth process is finished loading
+    if (!auth.isLoading) {
+      if (auth.isAuthenticated) {
+        // After successful authentication, navigate to /app
+        navigate('/app', { replace: true });
+      } else {
+        // If authentication failed, navigate to /home
+        navigate('/home', { replace: true });
+      }
     }
   }, [auth.isLoading, auth.isAuthenticated, navigate]);
 

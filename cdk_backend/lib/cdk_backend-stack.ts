@@ -58,7 +58,7 @@ export class CdkBackendStack extends cdk.Stack {
     });
     
     amplifyApp.addCustomRule({
-      source: '/<*>',
+      source: '/*',
       target: '/index.html',
       status: amplify.RedirectStatus.TEMPORARY_REDIRECT
     });
