@@ -13,7 +13,7 @@ export const UserPoolClientId = process.env.REACT_APP_USER_POOL_CLIENT_ID;
 export const IndentityPoolId = process.env.REACT_APP_IDENTITY_POOL_ID;
 export const HostedUIUrl = process.env.REACT_APP_HOSTED_UI_URL;
 export const Authority = process.env.REACT_APP_AUTHORITY;
-
+export const DomainPrefix = process.env.REACT_APP_DOMAIN_PREFIX;
 // Preferably not use
 export const HostedUserPoolDomain = process.env.REACT_APP_USER_POOL_DOMAIN;
 

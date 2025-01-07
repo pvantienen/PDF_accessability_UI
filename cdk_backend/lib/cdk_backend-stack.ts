@@ -77,6 +77,7 @@ export class CdkBackendStack extends cdk.Stack {
     });
 
     const domainPrefix = 'pdf-ui-auth'; // must be globally unique in that region
+
     // Construct Amplify app URL using known format without creating circular dependency
     const appUrl = `https://main.${amplifyApp.appId}.amplifyapp.com`;
     // const hostedUiDomain = `https://${domainPrefix}.auth.${this.region}.amazoncognito.com/oauth2`;
@@ -105,6 +106,7 @@ export class CdkBackendStack extends cdk.Stack {
       },
       customAttributes: {
         organization: new cognito.StringAttribute({ mutable: true }),
+        
       },
     });
 
@@ -209,7 +211,7 @@ export class CdkBackendStack extends cdk.Stack {
     mainBranch.addEnvironment('REACT_APP_USER_POOL_CLIENT_ID', userPoolClient.userPoolClientId);
     mainBranch.addEnvironment('REACT_APP_IDENTITY_POOL_ID', identityPool.ref);
     mainBranch.addEnvironment('REACT_APP_HOSTED_UI_URL', appUrl);
-    
+    mainBranch.addEnvironment('REACT_APP_DOMAIN_PREFIX', domainPrefix);
 
     // Grant Amplify permission to read the secret
     githubToken_secret_manager.grantRead(amplifyApp);
