@@ -10,6 +10,7 @@
     "@aws-sdk/s3-request-presigner": "^3.717.0",
     "@emotion/react": "^11.13.3",
     "@emotion/styled": "^11.13.0",
+    "@lottiefiles/react-lottie-player": "^3.5.4",
     "@mui/icons-material": "^6.1.1",
     "@mui/lab": "^6.0.0-beta.21",
     "@mui/material": "^6.1.1",

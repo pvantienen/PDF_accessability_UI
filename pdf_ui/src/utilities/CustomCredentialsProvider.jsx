@@ -1,12 +1,3 @@
-import { Amplify } from 'aws-amplify';
-import {
-  fetchAuthSession,
-  CredentialsAndIdentityIdProvider,
-  CredentialsAndIdentityId,
-  GetCredentialsOptions,
-  AuthTokens,
-} from 'aws-amplify/auth';
-
 import { CognitoIdentity } from '@aws-sdk/client-cognito-identity';
 import { IndentityPoolId,region } from './constants';
 
