@@ -11,6 +11,7 @@ import LeftNav from './components/LeftNav';
 import ElapsedTimer from './components/ElapsedTimer';
 import theme from './theme';
 import AccessibilityChecker from './components/AccessibilityChecker';
+import FirstSignInDialog from './components/FirstSignInDialog';
 
 import { Authority } from './utilities/constants';
 import CustomCredentialsProvider from './utilities/CustomCredentialsProvider';
@@ -115,7 +116,7 @@ function MainApp({ isLoggingOut, setIsLoggingOut }) {
 
         <Box sx={{ flexGrow: 1, padding: 3, backgroundColor: '#f4f6f8' }}>
           <Header />
-
+          <FirstSignInDialog />
           <Container maxWidth="lg" sx={{ marginTop: 4 }}>
             <Box
               sx={{
