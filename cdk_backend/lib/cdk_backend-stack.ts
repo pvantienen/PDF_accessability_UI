@@ -126,9 +126,6 @@ export class CdkBackendStack extends cdk.Stack {
       },
       standardAttributes: {
         email: { required: true, mutable: true },
-        // fullname: { required: true, mutable: true },
-        // phoneNumber: { required: true, mutable: true },
-        //First name, Last name
         givenName: { required: true, mutable: true },
         familyName: { required: true, mutable: true },
 
