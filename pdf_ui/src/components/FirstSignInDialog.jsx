@@ -8,14 +8,16 @@ import {
   TextField,
   Typography,
   Autocomplete,
-  CircularProgress
+  CircularProgress,
+  Snackbar,
+  Alert,
 } from '@mui/material';
 import { useAuth } from 'react-oidc-context';
 
 // Country/State/City data
 import { Country, State, City } from 'country-state-city';
 
-import { API_URL } from '../utilities/constants';
+import { FirstSignInAPI } from '../utilities/constants';
 
 function FirstSignInDialog() {
   const auth = useAuth();
@@ -29,6 +31,11 @@ function FirstSignInDialog() {
 
   // Loading indicator for submission
   const [loading, setLoading] = useState(false);
+
+  // Snackbar states
+  const [snackbarOpen, setSnackbarOpen] = useState(false);
+  const [snackbarMessage, setSnackbarMessage] = useState('');
+  const [snackbarSeverity, setSnackbarSeverity] = useState('success');
 
   // Get all countries
   const allCountries = Country.getAllCountries();
@@ -61,10 +68,9 @@ function FirstSignInDialog() {
   );
 
   const handleSubmit = async () => {
-    // If it’s already loading, or the form isn’t valid, do nothing
     if (loading || !formIsValid) return;
 
-    setLoading(true); // Start loading spinner
+    setLoading(true);
 
     try {
       const userSub = auth.user?.profile?.sub;
@@ -75,132 +81,157 @@ function FirstSignInDialog() {
         organization,
         country: selectedCountry.isoCode,
         state: selectedState.isoCode,
-        city: selectedCity.name
+        city: selectedCity.name,
       };
 
-      const response = await fetch(API_URL, {
+      const response = await fetch(FirstSignInAPI, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${idToken}`
+          Authorization: `Bearer ${idToken}`,
         },
         body: JSON.stringify(bodyData),
       });
 
       if (!response.ok) {
         const err = await response.json();
-        console.error('Error from /update-attributes:', err);
+        setSnackbarSeverity('error');
+        setSnackbarMessage(`Error: ${err.message}`);
       } else {
-        console.log('Successfully updated Cognito attributes!');
+        setSnackbarSeverity('success');
+        // setSnackbarMessage('Your details have been successfully submitted! Welcome aboard! You can now start exploring the app and all its features.');
+        setSnackbarMessage('Welcome aboard! You can now start exploring the app and all its features.');
+
         setOpen(false);
       }
     } catch (error) {
-      console.error('Error in handleSubmit:', error);
+      setSnackbarSeverity('error');
+      setSnackbarMessage(`Error: ${error.message}`);
     } finally {
-      setLoading(false); // Stop loading spinner
+      setSnackbarOpen(true);
+      setLoading(false);
     }
   };
 
+  const handleSnackbarClose = () => {
+    setSnackbarOpen(false);
+  };
+
   return (
-    <Dialog open={open} disableEscapeKeyDown>
-      <DialogTitle>Welcome! We just need a few more details.</DialogTitle>
-      <DialogContent>
-        <Typography variant="body1" sx={{ mb: 2 }}>
-          Thank you for signing up! Before you can access the app, please provide 
-          us with a few additional details about yourself and your organization.
-        </Typography>
+    <>
+      <Dialog open={open} disableEscapeKeyDown>
+        <DialogTitle>Welcome! We just need a few more details.</DialogTitle>
+        <DialogContent>
+          <Typography variant="body1" sx={{ mb: 2 }}>
+            Thank you for signing up! Before you can access the app, please provide 
+            us with a few additional details about yourself and your organization.
+          </Typography>
 
-        {/* ORGANIZATION */}
-        <TextField
-          fullWidth
-          required
-          label="Organization"
-          placeholder="If you don't belong to an organization, please type N/A"
-          variant="outlined"
-          value={organization}
-          onChange={(e) => setOrganization(e.target.value)}
-          margin="normal"
-        />
+          {/* ORGANIZATION */}
+          <TextField
+            fullWidth
+            required
+            label="Organization"
+            placeholder="If you don't belong to an organization, please type N/A"
+            variant="outlined"
+            value={organization}
+            onChange={(e) => setOrganization(e.target.value)}
+            margin="normal"
+          />
 
-        {/* COUNTRY AUTOCOMPLETE */}
-        <Autocomplete
-          sx={{ mt: 2 }}
-          value={selectedCountry}
-          onChange={(event, newValue) => {
-            setSelectedCountry(newValue);
-            setSelectedState(null);
-            setSelectedCity(null);
-          }}
-          options={allCountries}
-          getOptionLabel={(option) => (option?.name ? option.name : '')}
-          isOptionEqualToValue={(option, value) =>
-            option.isoCode === value.isoCode
-          }
-          renderInput={(params) => (
-            <TextField
-              {...params}
-              label="Country"
-              variant="outlined"
-              required
-            />
-          )}
-        />
+          {/* COUNTRY AUTOCOMPLETE */}
+          <Autocomplete
+            sx={{ mt: 2 }}
+            value={selectedCountry}
+            onChange={(event, newValue) => {
+              setSelectedCountry(newValue);
+              setSelectedState(null);
+              setSelectedCity(null);
+            }}
+            options={allCountries}
+            getOptionLabel={(option) => (option?.name ? option.name : '')}
+            isOptionEqualToValue={(option, value) =>
+              option.isoCode === value.isoCode
+            }
+            renderInput={(params) => (
+              <TextField
+                {...params}
+                label="Country"
+                variant="outlined"
+                required
+              />
+            )}
+          />
 
-        {/* STATE AUTOCOMPLETE */}
-        <Autocomplete
-          sx={{ mt: 2 }}
-          value={selectedState}
-          onChange={(event, newValue) => {
-            setSelectedState(newValue);
-            setSelectedCity(null);
-          }}
-          options={statesOfSelectedCountry}
-          getOptionLabel={(option) => (option?.name ? option.name : '')}
-          isOptionEqualToValue={(option, value) =>
-            option.isoCode === value.isoCode
-          }
-          renderInput={(params) => (
-            <TextField
-              {...params}
-              label="State"
-              variant="outlined"
-              required
-            />
-          )}
-          disabled={!selectedCountry}
-        />
+          {/* STATE AUTOCOMPLETE */}
+          <Autocomplete
+            sx={{ mt: 2 }}
+            value={selectedState}
+            onChange={(event, newValue) => {
+              setSelectedState(newValue);
+              setSelectedCity(null);
+            }}
+            options={statesOfSelectedCountry}
+            getOptionLabel={(option) => (option?.name ? option.name : '')}
+            isOptionEqualToValue={(option, value) =>
+              option.isoCode === value.isoCode
+            }
+            renderInput={(params) => (
+              <TextField
+                {...params}
+                label="State"
+                variant="outlined"
+                required
+              />
+            )}
+            disabled={!selectedCountry}
+          />
 
-        {/* CITY AUTOCOMPLETE */}
-        <Autocomplete
-          sx={{ mt: 2 }}
-          value={selectedCity}
-          onChange={(event, newValue) => setSelectedCity(newValue)}
-          options={citiesOfSelectedState}
-          getOptionLabel={(option) => (option?.name ? option.name : '')}
-          isOptionEqualToValue={(option, value) =>
-            option.name === value.name
-          }
-          renderInput={(params) => (
-            <TextField
-              {...params}
-              label="City"
-              variant="outlined"
-              required
-            />
-          )}
-          disabled={!selectedState}
-        />
-      </DialogContent>
-      <DialogActions>
-        <Button
-          variant="contained"
-          onClick={handleSubmit}
-          disabled={!formIsValid || loading}
-        >
-          {loading ? <CircularProgress size={24} color="inherit" /> : 'Submit'}
-        </Button>
-      </DialogActions>
-    </Dialog>
+          {/* CITY AUTOCOMPLETE */}
+          <Autocomplete
+            sx={{ mt: 2 }}
+            value={selectedCity}
+            onChange={(event, newValue) => setSelectedCity(newValue)}
+            options={citiesOfSelectedState}
+            getOptionLabel={(option) => (option?.name ? option.name : '')}
+            isOptionEqualToValue={(option, value) =>
+              option.name === value.name
+            }
+            renderInput={(params) => (
+              <TextField
+                {...params}
+                label="City"
+                variant="outlined"
+                required
+              />
+            )}
+            disabled={!selectedState}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button
+            variant="contained"
+            onClick={handleSubmit}
+            disabled={!formIsValid || loading}
+            sx={{ width: '100%', py: 1.5 }}
+          >
+            {loading ? <CircularProgress size={24} color="inherit" /> : 'Submit'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Snackbar */}
+      <Snackbar
+        open={snackbarOpen}
+        autoHideDuration={6000}
+        onClose={handleSnackbarClose}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
+      >
+        <Alert onClose={handleSnackbarClose} severity={snackbarSeverity} sx={{ width: '100%' }}>
+          {snackbarMessage}
+        </Alert>
+      </Snackbar>
+    </>
   );
 }
 

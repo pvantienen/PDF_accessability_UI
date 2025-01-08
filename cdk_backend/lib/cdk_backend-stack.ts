@@ -82,7 +82,7 @@ export class CdkBackendStack extends cdk.Stack {
 
     // Construct Amplify app URL using known format without creating circular dependency
     const appUrl = `https://main.${amplifyApp.appId}.amplifyapp.com`;
-    // const hostedUiDomain = `https://${domainPrefix}.auth.${this.region}.amazoncognito.com/oauth2`;
+    
     // Create the Lambda role first with necessary permissions
     const postConfirmationLambdaRole = new iam.Role(this, 'PostConfirmationLambdaRole', {
       assumedBy: new iam.ServicePrincipal('lambda.amazonaws.com'),
@@ -234,6 +234,8 @@ export class CdkBackendStack extends cdk.Stack {
       },
     });
 
+
+
     // ------------------- Lambda Function for Post Confirmation -------------------
     const updateAttributesFn = new lambda.Function(this, 'UpdateAttributesFn', {
       runtime: lambda.Runtime.PYTHON_3_9,
@@ -246,10 +248,37 @@ export class CdkBackendStack extends cdk.Stack {
       },
     });
 
+    const checkUploadQuotaLambdaRole = new iam.Role(this, 'CheckUploadQuotaLambdaRole', {
+      assumedBy: new iam.ServicePrincipal('lambda.amazonaws.com'),
+    });
+
+    // 2) Attach necessary policies
+    checkUploadQuotaLambdaRole.addToPolicy(new iam.PolicyStatement({
+      resources: ['*'],
+      actions: [
+        'cognito-idp:AdminGetUser',
+        'cognito-idp:AdminUpdateUserAttributes',
+        'logs:CreateLogGroup',
+        'logs:CreateLogStream',
+        'logs:PutLogEvents'
+      ],
+    }));
+
+    // 3) Create the Lambda function
+    const checkOrIncrementQuotaFn = new lambda.Function(this, 'checkOrIncrementQuotaFn', {
+      runtime: lambda.Runtime.PYTHON_3_9,
+      code: lambda.Code.fromAsset('lambda/checkOrIncrementQuota'),  
+      handler: 'index.handler',
+      timeout: cdk.Duration.seconds(30),
+      role: checkUploadQuotaLambdaRole,
+      environment: {
+        USER_POOL_ID: userPool.userPoolId  
+      }
+    });
 
     const updateAttributesApi = new apigateway.RestApi(this, 'UpdateAttributesApi', {
       restApiName: 'UpdateAttributesApi',
-      description: 'API to update Cognito user attributes (org, first_sign_in).',
+      description: 'API to update Cognito user attributes (org, first_sign_in,country, state, city, total_file_uploaded).',
       defaultCorsPreflightOptions: {
         allowOrigins: apigateway.Cors.ALL_ORIGINS,
         allowMethods: apigateway.Cors.ALL_METHODS,
@@ -263,13 +292,19 @@ export class CdkBackendStack extends cdk.Stack {
     });
 
     // 4) Add Resource & Method
-    const updateResource = updateAttributesApi.root.addResource('update-attributes');
-
+    const UpdateFirstSignIn = updateAttributesApi.root.addResource('update-first-sign-in');
+    const quotaResource = updateAttributesApi.root.addResource('upload-quota');
     // We attach the Cognito authorizer and set the authorizationType to COGNITO
-    updateResource.addMethod('POST', new apigateway.LambdaIntegration(updateAttributesFn), {
+    UpdateFirstSignIn.addMethod('POST', new apigateway.LambdaIntegration(updateAttributesFn), {
       authorizer: userPoolAuthorizer,
       authorizationType: apigateway.AuthorizationType.COGNITO,
     });
+
+    quotaResource.addMethod('POST', new apigateway.LambdaIntegration(checkOrIncrementQuotaFn), {
+      authorizer: userPoolAuthorizer,
+      authorizationType: apigateway.AuthorizationType.COGNITO,
+    });
+
 
     // const hostedUiDomain = `https://pdf-ui-auth.auth.${this.region}.amazoncognito.com/login/continue?client_id=${userPoolClient.userPoolClientId}&redirect_uri=https%3A%2F%2Fmain.${amplifyApp.appId}.amplifyapp.com&response_type=code&scope=email+openid+phone+profile`
     const Authority = `cognito-idp.${this.region}.amazonaws.com/${userPool.userPoolId}`;
@@ -287,8 +322,8 @@ export class CdkBackendStack extends cdk.Stack {
     mainBranch.addEnvironment('REACT_APP_HOSTED_UI_URL', appUrl);
     mainBranch.addEnvironment('REACT_APP_DOMAIN_PREFIX', domainPrefix);
 
-    mainBranch.addEnvironment('REACT_APP_UPDATE_ATTRIBUTES_API', updateAttributesApi.urlForPath('/update-attributes'));
-
+    mainBranch.addEnvironment('REACT_APP_UPDATE_FIRST_SIGN_IN', updateAttributesApi.urlForPath('/update-first-sign-in'));
+    mainBranch.addEnvironment('REACT_APP_UPLOAD_QUOTA_API', updateAttributesApi.urlForPath('/upload-quota'));
     // Grant Amplify permission to read the secret
     githubToken_secret_manager.grantRead(amplifyApp);
 
@@ -298,14 +333,17 @@ export class CdkBackendStack extends cdk.Stack {
     new cdk.CfnOutput(this, 'UserPoolDomain', { value: domainPrefix });
     new cdk.CfnOutput(this, 'IdentityPoolId', { value: identityPool.ref });
     new cdk.CfnOutput(this, 'AuthenticatedRole', { value: authenticatedRole.roleArn });
-    // new cdk.CfnOutput(this, 'BucketName', { value: userPoolHostedUiDomain });
     new cdk.CfnOutput(this, 'AmplifyAppURL', {
       value: appUrl,
       description: 'Amplify Application URL',
     });
-    new cdk.CfnOutput(this, 'UpdateAttributesApiUrl', {
-      value: updateAttributesApi.urlForPath('/update-attributes'),
+    new cdk.CfnOutput(this, 'UpdateFirstSignInEndpoint', {
+      value: updateAttributesApi.urlForPath('/update-first-sign-in'),
       description: 'POST requests to this URL to update attributes.',
+    });
+
+    new cdk.CfnOutput(this, 'CheckUploadQuotaEndpoint', {
+      value: updateAttributesApi.urlForPath('/upload-quota'),
     });
 
 

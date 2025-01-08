@@ -50,7 +50,7 @@ const LeftNav = () => {
               - This solution only remediates <strong>PDF documents</strong>. Other document types will not be accepted.
             </Typography>
             <Typography variant="body2" gutterBottom>
-              - This solution does not remediate for <strong>forms and color selection/contrast for people with color blindness</strong>.
+              - This solution does not remediate for <strong>fillable forms and color selection/contrast for people with color blindness</strong>.
             </Typography>
           </CardContent>
         </Card>

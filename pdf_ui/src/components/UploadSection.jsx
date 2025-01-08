@@ -1,20 +1,23 @@
 import React, { useState, useRef } from 'react';
+import { useAuth } from 'react-oidc-context'; // to get user sub if needed
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
 import { Box, Typography, TextField, Tooltip, IconButton, Snackbar, Alert } from '@mui/material';
 import { LoadingButton } from '@mui/lab';
 import { motion } from 'framer-motion';
 import { CircularProgress } from '@mui/material';
 import { InfoOutlined } from '@mui/icons-material';
-import { PDFDocument } from 'pdf-lib'; // Import from pdf-lib
+import { PDFDocument } from 'pdf-lib';
 
-import {region,Bucket } from '../utilities/constants';
-function UploadSection({ onUploadComplete, awsCredentials }) {
+import { region, Bucket, CheckAndIncrementQuota } from '../utilities/constants';
+
+function UploadSection({ onUploadComplete, awsCredentials, currentUsage, onUsageRefresh, setUsageCount }) {
+  const auth = useAuth();
+  const fileInputRef = useRef(null);
+
   const [selectedFile, setSelectedFile] = useState(null);
   const [isUploading, setIsUploading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [openSnackbar, setOpenSnackbar] = useState(false);
-  
-  const fileInputRef = useRef(null);
 
   const handleFileInput = async (e) => {
     const file = e.target.files[0];
@@ -23,6 +26,7 @@ function UploadSection({ onUploadComplete, awsCredentials }) {
     // Reset any existing error messages
     setErrorMessage('');
 
+    // 1) Basic PDF checks
     if (file.type !== 'application/pdf') {
       setErrorMessage('Only PDF files are allowed.');
       setOpenSnackbar(true);
@@ -37,6 +41,7 @@ function UploadSection({ onUploadComplete, awsCredentials }) {
       return;
     }
 
+    // 2) Page count check with pdf-lib
     try {
       const arrayBuffer = await file.arrayBuffer();
       const pdfDoc = await PDFDocument.load(arrayBuffer);
@@ -66,6 +71,14 @@ function UploadSection({ onUploadComplete, awsCredentials }) {
   };
 
   const handleUpload = async () => {
+    // **1) Check if user has reached the upload limit**
+    if (currentUsage >= 3) { // Adjust the limit as per your requirements
+      setErrorMessage('You have reached the testing upload limit. To continue testing, please refer to the GitHub repository for instructions on installing and running the application locally.');
+      setOpenSnackbar(true);
+      return;
+    }
+
+    // **2) Basic guards**
     if (!selectedFile) {
       setErrorMessage('Please select a PDF file before uploading.');
       setOpenSnackbar(true);
@@ -77,11 +90,49 @@ function UploadSection({ onUploadComplete, awsCredentials }) {
       return;
     }
 
+    // **3) Attempt to increment usage first**
+    const userSub = auth.user?.profile?.sub;
+    if (!userSub) {
+      setErrorMessage('No user "sub" found. Are you logged in?');
+      setOpenSnackbar(true);
+      return;
+    }
+    const idToken = auth.user?.id_token;
     setIsUploading(true);
 
     try {
+      // Call your usage API to increment
+      const usageRes = await fetch(CheckAndIncrementQuota, {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${idToken}`
+        },
+        body: JSON.stringify({ sub: userSub, mode: 'increment' }),
+      });
+
+      if (!usageRes.ok) {
+        // e.g. 403 if user at limit, or other error
+        const errData = await usageRes.json();
+        
+        // **Updated Error Message with Support Guidance**
+        const quotaExceeded = usageRes.status === 403; // Assuming 403 indicates quota limit
+        const message = quotaExceeded
+          ? 'You have reached the upload limit. Please reach out to our support team for assistance.'
+          : errData.message || 'You have reached the upload limit. Please reach out to our support team for assistance.';
+        
+        setErrorMessage(message);
+        setOpenSnackbar(true);
+        setIsUploading(false);
+        return;
+      }
+      
+      const usageData = await usageRes.json();
+      const updatedUsage = usageData.newCount; // Updated usage count from the backend
+      setUsageCount(updatedUsage);
+      
+      // If success, proceed with S3 upload
       const client = new S3Client({
-        // region: 'us-east-1',
         region,
         credentials: {
           accessKeyId: awsCredentials.accessKeyId,
@@ -91,8 +142,7 @@ function UploadSection({ onUploadComplete, awsCredentials }) {
       });
 
       const params = {
-        // Bucket: 'pdfaccessibility-pdfaccessibilitybucket149b7021e-wurx8blwem2d',
-        Bucket: Bucket,
+        Bucket,
         Key: `pdf/${selectedFile.name}`,
         Body: selectedFile,
       };
@@ -100,7 +150,15 @@ function UploadSection({ onUploadComplete, awsCredentials }) {
       const command = new PutObjectCommand(params);
       await client.send(command);
 
+      // Notify parent of completion
       onUploadComplete(selectedFile.name);
+
+      // 3) Tell parent (Header, etc.) to refresh usage
+      if (onUsageRefresh) {
+        onUsageRefresh();
+      }
+
+      // Reset
       resetFileInput();
     } catch (error) {
       console.error('Error uploading file:', error);
@@ -111,10 +169,8 @@ function UploadSection({ onUploadComplete, awsCredentials }) {
     }
   };
 
-  const handleCloseSnackbar = (event, reason) => {
-    if (reason === 'clickaway') {
-      return;
-    }
+  const handleCloseSnackbar = (_, reason) => {
+    if (reason === 'clickaway') return;
     setOpenSnackbar(false);
   };
 
@@ -146,6 +202,7 @@ function UploadSection({ onUploadComplete, awsCredentials }) {
             </IconButton>
           </Tooltip>
         </Box>
+
         <TextField
           type="file"
           accept=".pdf"
@@ -153,12 +210,14 @@ function UploadSection({ onUploadComplete, awsCredentials }) {
           inputRef={fileInputRef}
           inputProps={{ style: { display: 'block', margin: '1rem auto' } }}
         />
+        
         <LoadingButton
           variant="contained"
           color="primary"
           loading={isUploading}
           onClick={handleUpload}
-          disabled={!selectedFile || isUploading}
+          // **Remove the currentUsage check from disabled prop**
+          disabled={isUploading || !selectedFile}
           sx={{
             marginTop: '1rem',
             backgroundColor: '#1976d2',
@@ -170,9 +229,7 @@ function UploadSection({ onUploadComplete, awsCredentials }) {
               transform: 'scale(1.05)',
             },
           }}
-          loadingIndicator={
-            <CircularProgress size={20} sx={{ color: 'white' }} />
-          }
+          loadingIndicator={<CircularProgress size={20} sx={{ color: 'white' }} />}
         >
           {isUploading ? 'Uploading...' : selectedFile ? `Upload ${selectedFile.name}` : 'Please Upload A PDF'}
         </LoadingButton>

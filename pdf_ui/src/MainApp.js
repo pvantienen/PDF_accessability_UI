@@ -1,8 +1,8 @@
-// MainApp.js
+// src/MainApp.js
 import React, { useState, useEffect } from 'react';
 import { useAuth } from 'react-oidc-context';
 import { useNavigate } from 'react-router-dom';
-import { Container, Box, Typography, Button } from '@mui/material';
+import { Container, Box, Button, Typography } from '@mui/material';
 import { ThemeProvider } from '@mui/material/styles';
 import Header from './components/Header';
 import UploadSection from './components/UploadSection';
@@ -13,7 +13,7 @@ import theme from './theme';
 import AccessibilityChecker from './components/AccessibilityChecker';
 import FirstSignInDialog from './components/FirstSignInDialog';
 
-import { Authority } from './utilities/constants';
+import { Authority, CheckAndIncrementQuota } from './utilities/constants';
 import CustomCredentialsProvider from './utilities/CustomCredentialsProvider';
 
 function MainApp({ isLoggingOut, setIsLoggingOut }) {
@@ -28,6 +28,11 @@ function MainApp({ isLoggingOut, setIsLoggingOut }) {
 
   // Control whether AccessibilityReport is open
   const [reportOpen, setReportOpen] = useState(false);
+
+  // Centralized Usage State
+  const [usageCount, setUsageCount] = useState(0);
+  const [loadingUsage, setLoadingUsage] = useState(false);
+  const [usageError, setUsageError] = useState('');
 
   // Fetch credentials once user is authenticated
   useEffect(() => {
@@ -63,12 +68,61 @@ function MainApp({ isLoggingOut, setIsLoggingOut }) {
     }
   }, [auth.isAuthenticated, isLoggingOut, navigate]);
 
+  // FUNCTION: Fetch current usage from the backend (mode="check")
+  const refreshUsage = async () => {
+    if (!auth.isAuthenticated) return; // not logged in yet
+    setLoadingUsage(true);
+    setUsageError('');
+
+    const userSub = auth.user?.profile?.sub;
+    if (!userSub) {
+      setUsageError('User identifier not found.');
+      setLoadingUsage(false);
+      return;
+    }
+
+    try {
+      const res = await fetch(CheckAndIncrementQuota, {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${auth.user?.id_token}`
+        },
+        body: JSON.stringify({ sub: userSub, mode: 'check' }),
+      });
+
+      if (!res.ok) {
+        const errData = await res.json();
+        setUsageError(errData.message || 'Error fetching usage');
+        return;
+      }
+
+      const data = await res.json();
+      setUsageCount(data.currentUsage ?? 0);
+    } catch (err) {
+      setUsageError(`Failed to fetch usage: ${err.message}`);
+    } finally {
+      setLoadingUsage(false);
+    }
+  };
+
+  // Call refreshUsage whenever the user becomes authenticated
+  useEffect(() => {
+    if (auth.isAuthenticated) {
+      refreshUsage();
+    }
+  }, [auth.isAuthenticated]);
+
   // Handle events from child components
   const handleUploadComplete = (fileName) => {
     console.log('Upload completed, file name:', fileName);
     setUploadedFileName(fileName);
     setUploadedAt(Date.now());
     setIsFileReady(false);
+
+    // After a successful upload (and increment usage),
+    // refresh usage so the new count shows up
+    refreshUsage();
   };
 
   const handleFileReady = () => {
@@ -80,17 +134,6 @@ function MainApp({ isLoggingOut, setIsLoggingOut }) {
     setUploadedAt(null);
     setIsFileReady(false);
   };
-
-  // const handleSignOut = async () => {
-  //   try {
-  //     await auth.removeUser();
-  //     setIsLoggingOut(true);
-  //     navigate('/logout');
-  //   } catch (error) {
-  //     console.error('Error during sign out:', error);
-  //     setIsLoggingOut(false);
-  //   }
-  // };
 
   // Handle authentication loading and errors
   if (auth.isLoading) {
@@ -115,8 +158,16 @@ function MainApp({ isLoggingOut, setIsLoggingOut }) {
         <LeftNav />
 
         <Box sx={{ flexGrow: 1, padding: 3, backgroundColor: '#f4f6f8' }}>
-          <Header />
+          <Header
+            handleSignOut={() => auth.removeUser()}
+            usageCount={usageCount}
+            refreshUsage={refreshUsage}
+            usageError={usageError}
+            loadingUsage={loadingUsage}
+          />
+
           <FirstSignInDialog />
+
           <Container maxWidth="lg" sx={{ marginTop: 4 }}>
             <Box
               sx={{
@@ -140,9 +191,13 @@ function MainApp({ isLoggingOut, setIsLoggingOut }) {
                 Drag & drop your PDF file below, or click to select it.
               </Typography>
 
+              {/* Pass usageCount and refreshUsage to UploadSection */}
               <UploadSection
                 onUploadComplete={handleUploadComplete}
                 awsCredentials={awsCredentials}
+                currentUsage={usageCount}
+                onUsageRefresh={refreshUsage}
+                setUsageCount={setUsageCount}
               />
 
               {uploadedFileName && (
