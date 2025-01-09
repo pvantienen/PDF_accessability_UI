@@ -1,7 +1,6 @@
 // App.jsx
 import React, { useState } from 'react';
 import {
-  BrowserRouter as Router,
   Routes,
   Route,
   Navigate,
@@ -79,9 +78,7 @@ function App() {
   return (
     <AuthProvider {...cognitoAuthConfig}>
       <ThemeProvider theme={theme}>
-        <Router>
           <AppRoutes />
-        </Router>
       </ThemeProvider>
     </AuthProvider>
   );
