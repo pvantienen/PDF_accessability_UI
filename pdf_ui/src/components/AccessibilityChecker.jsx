@@ -33,7 +33,7 @@ import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { Bucket,region, } from '../utilities/constants';
 
 
-function AccessibilityChecker({ filename, awsCredentials }) {
+function AccessibilityChecker({ originalFileName, updatedFilename, awsCredentials }) {
   const [open, setOpen] = useState(false);
 
   // Reports in JSON form
@@ -51,9 +51,13 @@ function AccessibilityChecker({ filename, awsCredentials }) {
   const [isPolling, setIsPolling] = useState(false);
   const [pollingIntervalId, setPollingIntervalId] = useState(null);
 
-  const fileKeyWithoutExtension = filename ? filename.replace(/\.pdf$/i, '') : '';
-  const beforeReportKey = `temp/${fileKeyWithoutExtension}/accessability-report/${fileKeyWithoutExtension}_accessibility_report_before_remidiation.json`;
-  const afterReportKey = `temp/${fileKeyWithoutExtension}/accessability-report/COMPLIANT_${fileKeyWithoutExtension}_accessibility_report_after_remidiation.json`;
+  const UpdatedFileKeyWithoutExtension = updatedFilename ? updatedFilename.replace(/\.pdf$/i, '') : '';
+  const beforeReportKey = `temp/${UpdatedFileKeyWithoutExtension}/accessability-report/${UpdatedFileKeyWithoutExtension}_accessibility_report_before_remidiation.json`;
+  const afterReportKey = `temp/${UpdatedFileKeyWithoutExtension}/accessability-report/COMPLIANT_${UpdatedFileKeyWithoutExtension}_accessibility_report_after_remidiation.json`;
+
+  const OriginalFileKeyWithoutExtension = originalFileName ? originalFileName.replace(/\.pdf$/i, '') : '';
+  const desiredFilenameBefore = `COMPLIANT_${OriginalFileKeyWithoutExtension}_before_remediation_accessibility_report.json`;
+  const desiredFilenameAfter = `COMPLIANT_${OriginalFileKeyWithoutExtension}_after_remediation_accessibility_report.json`;
 
   const s3 = new S3Client({
     region,
@@ -75,13 +79,20 @@ function AccessibilityChecker({ filename, awsCredentials }) {
   };
 
   /**
-   * Generate a presigned URL to directly download the JSON report from S3.
-   */
-  const generatePresignedUrl = async (key) => {
-    const command = new GetObjectCommand({ Bucket: Bucket, Key: key });
-    // expiresIn is in seconds; adjust as needed (e.g., 1 hour = 3600)
-    return await getSignedUrl(s3, command, { expiresIn: 3600 });
-  };
+ * Generate a presigned URL to directly download the JSON report from S3 with a specified filename.
+ * @param {string} key - The S3 object key.
+ * @param {string} filename - The desired filename for the downloaded file.
+ * @returns {Promise<string>} - The presigned URL.
+ */
+
+const generatePresignedUrl = async (key, filename) => {
+  const command = new GetObjectCommand({
+    Bucket: Bucket,
+    Key: key,
+    ResponseContentDisposition: `attachment; filename="${filename}"`,
+  });
+  return await getSignedUrl(s3, command, { expiresIn: 3600 }); // 1 hour expiration
+};
 
   /**
    * Fetch the "before" report
@@ -91,10 +102,10 @@ function AccessibilityChecker({ filename, awsCredentials }) {
       // First fetch the JSON data
       const data = await fetchJsonFromS3(beforeReportKey);
       setBeforeReport(data);
-
+      
       // Then generate a presigned URL for that JSON file
       setIsBeforeUrlLoading(true);
-      const presignedUrl = await generatePresignedUrl(beforeReportKey);
+      const presignedUrl = await generatePresignedUrl(beforeReportKey,desiredFilenameBefore);
       setBeforeReportUrl(presignedUrl);
     } catch (error) {
       console.error('Error fetching BEFORE report from S3:', error);
@@ -114,7 +125,7 @@ function AccessibilityChecker({ filename, awsCredentials }) {
 
       // Generate a presigned URL for downloading the AFTER report
       setIsAfterUrlLoading(true);
-      const presignedUrl = await generatePresignedUrl(afterReportKey);
+      const presignedUrl = await generatePresignedUrl(afterReportKey,desiredFilenameAfter);
       setAfterReportUrl(presignedUrl);
 
       // Stop polling since file now exists
@@ -134,6 +145,7 @@ function AccessibilityChecker({ filename, awsCredentials }) {
     setOpen(true);
     setIsPolling(true);
     fetchBeforeReport();
+    fetchAfterReport();
     const intervalId = setInterval(fetchAfterReport, 15000);
     setPollingIntervalId(intervalId);
   };
@@ -282,7 +294,7 @@ function AccessibilityChecker({ filename, awsCredentials }) {
 
   return (
     <>
-      {filename && (
+      {updatedFilename && (
         <Button variant="contained" color="primary" onClick={handleOpen} sx={{ marginTop: 2 }}>
           Check PDF Accessibility
         </Button>

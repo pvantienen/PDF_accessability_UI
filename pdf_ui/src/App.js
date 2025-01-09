@@ -20,10 +20,10 @@ import CallbackPage from './pages/CallbackPage'; // New Callback Component
 const cognitoAuthConfig = {
   authority: `https://${Authority}`,
   client_id: UserPoolClientId,
-  // redirect_uri: `${HostedUIUrl}/callback`, // Updated redirect_uri
-  // post_logout_redirect_uri: `${HostedUIUrl}/home`,
-  redirect_uri: 'http://localhost:3000/callback', // Updated redirect_uri
-  post_logout_redirect_uri: 'http://localhost:3000/home',
+  redirect_uri: `${HostedUIUrl}/callback`, // Updated redirect_uri
+  post_logout_redirect_uri: `${HostedUIUrl}/home`,
+  // redirect_uri: 'http://localhost:3000/callback', // Updated redirect_uri
+  // post_logout_redirect_uri: 'http://localhost:3000/home',
   response_type: 'code',
   scope: 'email openid phone profile',
 };
@@ -47,8 +47,7 @@ function AppRoutes() {
       <Route path="/home" element={<LandingPage />} />
 
       {/* Callback Route */}
-      {/* <Route path="/app/callback" element={<CallbackPage />} /> */}
-      <Route path="/callback" element={<CallbackPage />} /> {/* Updated Callback Route */}
+      <Route path="/callback" element={<CallbackPage />} /> 
       {/* Logout Route */}
       <Route
         path="/logout"
@@ -57,7 +56,7 @@ function AppRoutes() {
 
       {/* Protected App Routes */}
       <Route
-        path="/app/*"
+        path="/app"
         element={
           auth.isAuthenticated ? (
             <MainApp

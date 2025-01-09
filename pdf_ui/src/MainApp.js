@@ -23,9 +23,10 @@ function MainApp({ isLoggingOut, setIsLoggingOut }) {
   // AWS & file states
   const [awsCredentials, setAwsCredentials] = useState(null);
   const [uploadedFileName, setUploadedFileName] = useState('');
+  const [updatedFileName, setUpdatedFileName] = useState('');
   const [uploadedAt, setUploadedAt] = useState(null);
   const [isFileReady, setIsFileReady] = useState(false);
-
+ 
   // Control whether AccessibilityReport is open
   const [reportOpen, setReportOpen] = useState(false);
 
@@ -114,9 +115,13 @@ function MainApp({ isLoggingOut, setIsLoggingOut }) {
   }, [auth.isAuthenticated]);
 
   // Handle events from child components
-  const handleUploadComplete = (fileName) => {
-    console.log('Upload completed, file name:', fileName);
-    setUploadedFileName(fileName);
+  const handleUploadComplete = (updated_filename, original_fileName) => {
+    console.log('Upload completed, new file name:', updated_filename);
+    console.log('Original file name:', original_fileName);
+
+    setUploadedFileName(original_fileName);
+    setUpdatedFileName(updated_filename);
+
     setUploadedAt(Date.now());
     setIsFileReady(false);
 
@@ -131,6 +136,7 @@ function MainApp({ isLoggingOut, setIsLoggingOut }) {
 
   const handleNewUpload = () => {
     setUploadedFileName('');
+    setUpdatedFileName('');
     setUploadedAt(null);
     setIsFileReady(false);
   };
@@ -237,14 +243,16 @@ function MainApp({ isLoggingOut, setIsLoggingOut }) {
                 }}
               >
                 <DownloadSection
-                  filename={uploadedFileName}
+                  originalFileName={uploadedFileName}
+                  updatedFilename={updatedFileName}
                   onFileReady={handleFileReady}
                   awsCredentials={awsCredentials}
                 />
                 <AccessibilityChecker
                   open={reportOpen}
                   onClose={() => setReportOpen(false)}
-                  filename={uploadedFileName}
+                  originalFileName={uploadedFileName}
+                  updatedFilename={updatedFileName}
                   awsCredentials={awsCredentials}
                 />
               </Box>

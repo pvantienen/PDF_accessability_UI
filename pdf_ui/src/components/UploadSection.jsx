@@ -141,9 +141,13 @@ function UploadSection({ onUploadComplete, awsCredentials, currentUsage, onUsage
         },
       });
 
+      const timestamp = new Date().toISOString().replace(/[-:.TZ]/g, ''); // YYYYMMDDTHHMMSS format
+      const userEmail = auth.user?.profile?.email || ''; // Use email for unique filename
+      const uniqueFilename = `${userEmail}${timestamp}${selectedFile.name}`; // No sanitization
+
       const params = {
         Bucket,
-        Key: `pdf/${selectedFile.name}`,
+        Key: `pdf/${uniqueFilename}`,
         Body: selectedFile,
       };
 
@@ -151,7 +155,7 @@ function UploadSection({ onUploadComplete, awsCredentials, currentUsage, onUsage
       await client.send(command);
 
       // Notify parent of completion
-      onUploadComplete(selectedFile.name);
+      onUploadComplete(uniqueFilename,selectedFile.name);
 
       // 3) Tell parent (Header, etc.) to refresh usage
       if (onUsageRefresh) {
@@ -173,7 +177,19 @@ function UploadSection({ onUploadComplete, awsCredentials, currentUsage, onUsage
     if (reason === 'clickaway') return;
     setOpenSnackbar(false);
   };
+  const FILENAME_THRESHOLD = 40; // Set the filename character limit
 
+  // Function to truncate the filename if it exceeds the threshold
+  const truncateFilename = (filename) => {
+    if (filename.length > FILENAME_THRESHOLD) {
+      const extensionIndex = filename.lastIndexOf('.');
+      const extension = filename.substring(extensionIndex);
+      const truncatedName = filename.substring(0, FILENAME_THRESHOLD - extension.length) + '...';
+      return truncatedName + extension;
+    }
+    return filename;
+  };
+  
   return (
     <motion.div
       initial={{ opacity: 0 }}
@@ -202,7 +218,7 @@ function UploadSection({ onUploadComplete, awsCredentials, currentUsage, onUsage
             </IconButton>
           </Tooltip>
         </Box>
-
+  
         <TextField
           type="file"
           accept=".pdf"
@@ -210,13 +226,12 @@ function UploadSection({ onUploadComplete, awsCredentials, currentUsage, onUsage
           inputRef={fileInputRef}
           inputProps={{ style: { display: 'block', margin: '1rem auto' } }}
         />
-        
+  
         <LoadingButton
           variant="contained"
           color="primary"
           loading={isUploading}
           onClick={handleUpload}
-          // **Remove the currentUsage check from disabled prop**
           disabled={isUploading || !selectedFile}
           sx={{
             marginTop: '1rem',
@@ -231,10 +246,14 @@ function UploadSection({ onUploadComplete, awsCredentials, currentUsage, onUsage
           }}
           loadingIndicator={<CircularProgress size={20} sx={{ color: 'white' }} />}
         >
-          {isUploading ? 'Uploading...' : selectedFile ? `Upload ${selectedFile.name}` : 'Please Upload A PDF'}
+          {isUploading
+            ? 'Uploading...'
+            : selectedFile
+            ? `Upload ${truncateFilename(selectedFile.name)}`
+            : 'Please Upload A PDF'}
         </LoadingButton>
       </Box>
-
+  
       {/* Snackbar for error messages */}
       <Snackbar
         open={openSnackbar}
@@ -247,7 +266,7 @@ function UploadSection({ onUploadComplete, awsCredentials, currentUsage, onUsage
         </Alert>
       </Snackbar>
     </motion.div>
-  );
-}
+  );}
+  
 
 export default UploadSection;

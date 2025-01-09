@@ -6,12 +6,49 @@ import { motion } from 'framer-motion';
 import { LoadingButton } from '@mui/lab'; // Importing LoadingButton from MUI Lab
 import { CircularProgress } from '@mui/material';
 
+import { Bucket, region } from '../utilities/constants';
 
-import { Bucket,region, } from '../utilities/constants';
-
-export default function DownloadSection({ filename, onFileReady, awsCredentials }) {
+export default function DownloadSection({ originalFileName, updatedFilename, onFileReady, awsCredentials }) {
   const [downloadUrl, setDownloadUrl] = useState('');
   const [isFileReady, setIsFileReady] = useState(false);
+
+  const FILENAME_THRESHOLD = 30; // Set the filename character limit
+
+  // Function to truncate the filename if it exceeds the threshold
+  const truncateFilename = (filename) => {
+    if (filename.length > FILENAME_THRESHOLD) {
+      const extensionIndex = filename.lastIndexOf('.');
+      const extension = filename.substring(extensionIndex);
+      const truncatedName = filename.substring(0, FILENAME_THRESHOLD - extension.length) + '...';
+      return truncatedName + extension;
+    }
+    return filename;
+  };
+
+  const generatePresignedUrl = async (key, filename) => {
+    const s3 = new S3Client({
+      region,
+      credentials: {
+        accessKeyId: awsCredentials?.accessKeyId,
+        secretAccessKey: awsCredentials?.secretAccessKey,
+        sessionToken: awsCredentials?.sessionToken,
+      },
+    });
+
+    const command = new GetObjectCommand({
+      Bucket: Bucket,
+      Key: key,
+      ResponseContentDisposition: `attachment; filename="${filename}"`,
+    });
+
+    try {
+      const url = await getSignedUrl(s3, command, { expiresIn: 300 }); // 5 minutes expiration
+      return url;
+    } catch (error) {
+      console.error('Error generating presigned URL:', error);
+      throw error;
+    }
+  };
 
   useEffect(() => {
     let intervalId;
@@ -27,18 +64,17 @@ export default function DownloadSection({ filename, onFileReady, awsCredentials 
           },
         });
 
+        const objectKey = `result/COMPLIANT_${updatedFilename}`;
+
         await s3.send(
           new HeadObjectCommand({
             Bucket: Bucket,
-            Key: `result/COMPLIANT_${filename}`,
+            Key: objectKey,
           })
         );
+        const desiredFilename = `COMPLIANT_${originalFileName}`;
 
-        const command = new GetObjectCommand({
-          Bucket: Bucket,
-          Key: `result/COMPLIANT_${filename}`,
-        });
-        const url = await getSignedUrl(s3, command, { expiresIn: 300 });
+        const url = await generatePresignedUrl(objectKey, desiredFilename);
 
         setDownloadUrl(url);
         setIsFileReady(true);
@@ -49,12 +85,12 @@ export default function DownloadSection({ filename, onFileReady, awsCredentials 
       }
     };
 
-    if (filename && !isFileReady) {
+    if (updatedFilename && !isFileReady) {
       intervalId = setInterval(checkFileAvailability, 15000);
     }
 
     return () => clearInterval(intervalId);
-  }, [filename, isFileReady, onFileReady, awsCredentials]);
+  }, [updatedFilename, isFileReady, onFileReady, awsCredentials]);
 
   return (
     <motion.div
@@ -75,7 +111,7 @@ export default function DownloadSection({ filename, onFileReady, awsCredentials 
         }}
       >
         <Typography variant="h6" sx={{ marginBottom: '1rem' }}>
-          {isFileReady ? `File Ready: ${filename}` : `Processing File: ${filename}`}
+          {isFileReady ? `File Ready: ${truncateFilename(originalFileName)}` : `Processing File: ${truncateFilename(originalFileName)}`}
         </Typography>
         {!isFileReady ? (
           <Alert severity="info" sx={{ marginBottom: '1rem' }}>
@@ -106,7 +142,9 @@ export default function DownloadSection({ filename, onFileReady, awsCredentials 
             },
           }}
         >
-          {isFileReady ? `Download Remediated ${filename}` : `Remediating: ${filename}`}
+          {isFileReady
+            ? `Download Remediated ${truncateFilename(originalFileName)}`
+            : `Remediating: ${truncateFilename(originalFileName)}`}
         </LoadingButton>
       </Box>
     </motion.div>
