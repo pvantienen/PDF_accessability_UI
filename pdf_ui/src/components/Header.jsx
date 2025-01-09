@@ -10,12 +10,25 @@ import {
 } from '@mui/material';
 import PropTypes from 'prop-types';
 import { HEADER_BACKGROUND } from '../utilities/constants';
-function Header({ handleSignOut, usageCount, refreshUsage, usageError, loadingUsage }) {
+
+function Header({ handleSignOut, usageCount, maxFilesAllowed, refreshUsage, usageError, loadingUsage }) {
   // Compute usage visually
-  const usagePercentage = Math.min((usageCount / 3) * 100, 100);
+  const usagePercentage = maxFilesAllowed > 0 ? Math.min((usageCount / maxFilesAllowed) * 100, 100) : 0;
+
+  // Determine progress bar color based on usage
+  const getProgressBarColor = () => {
+    if (usagePercentage < 50) return '#66bb6a'; // Green
+    if (usagePercentage < 80) return '#ffa726'; // Orange
+    return '#ef5350'; // Red
+  };
+
+  // Format numbers for better readability
+  const formatNumber = (num) => {
+    return num.toLocaleString();
+  };
 
   return (
-    <AppBar position="static" color= {HEADER_BACKGROUND} role="banner" aria-label="Application Header">
+    <AppBar position="static" color={HEADER_BACKGROUND} role="banner" aria-label="Application Header">
       <Toolbar sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         
         {/* Left Side: App Title */}
@@ -29,13 +42,13 @@ function Header({ handleSignOut, usageCount, refreshUsage, usageError, loadingUs
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
           
           {/* Display usage + progress bar */}
-          <Box sx={{ minWidth: 150 }}>
+          <Box sx={{ minWidth: 200 }}>
             <Typography variant="body2" sx={{ mb: 0.5 }}>
               {loadingUsage
                 ? 'Checking usage...'
                 : usageError
                   ? `Error: ${usageError}`
-                  : `Used: ${usageCount} / 3`}
+                  : `Used: ${formatNumber(usageCount)} / ${formatNumber(maxFilesAllowed)}`}
             </Typography>
             
             {!usageError && !loadingUsage && (
@@ -46,9 +59,14 @@ function Header({ handleSignOut, usageCount, refreshUsage, usageError, loadingUs
                   height: 6,
                   borderRadius: '3px',
                   '& .MuiLinearProgress-bar': {
-                    backgroundColor: usagePercentage < 100 ? '#66bb6a' : '#ef5350', 
+                    backgroundColor: getProgressBarColor(), 
                   },
                 }}
+                aria-valuenow={usagePercentage}
+                aria-valuemin={0}
+                aria-valuemax={100}
+                role="progressbar"
+                aria-label={`Usage: ${formatNumber(usageCount)} out of ${formatNumber(maxFilesAllowed)} files uploaded`}
               />
             )}
           </Box>
@@ -92,6 +110,7 @@ function Header({ handleSignOut, usageCount, refreshUsage, usageError, loadingUs
               },
               transition: 'all 0.3s ease-in-out',
             }}
+            aria-label="Home Button"
           >
             Home
           </Button>
@@ -104,6 +123,7 @@ function Header({ handleSignOut, usageCount, refreshUsage, usageError, loadingUs
 Header.propTypes = {
   handleSignOut: PropTypes.func.isRequired,
   usageCount: PropTypes.number.isRequired,
+  maxFilesAllowed: PropTypes.number.isRequired,
   refreshUsage: PropTypes.func.isRequired,
   usageError: PropTypes.string,
   loadingUsage: PropTypes.bool,

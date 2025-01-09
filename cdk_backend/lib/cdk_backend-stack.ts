@@ -358,6 +358,8 @@ export class CdkBackendStack extends cdk.Stack {
     // Grant Amplify permission to read the secret
     githubToken_secret_manager.grantRead(amplifyApp);
 
+
+    
     // --------------------------- Outputs ------------------------------
     new cdk.CfnOutput(this, 'UserPoolId', { value: userPool.userPoolId });
     new cdk.CfnOutput(this, 'UserPoolClientId', { value: userPoolClient.userPoolClientId });

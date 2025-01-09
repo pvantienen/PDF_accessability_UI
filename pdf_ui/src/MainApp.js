@@ -32,6 +32,9 @@ function MainApp({ isLoggingOut, setIsLoggingOut }) {
 
   // Centralized Usage State
   const [usageCount, setUsageCount] = useState(0);
+  const [maxFilesAllowed, setMaxFilesAllowed] = useState(3); // Default value
+  const [maxPagesAllowed, setMaxPagesAllowed] = useState(10); // Default value
+  const [maxSizeAllowedMB, setMaxSizeAllowedMB] = useState(25); // Default value
   const [loadingUsage, setLoadingUsage] = useState(false);
   const [usageError, setUsageError] = useState('');
 
@@ -95,11 +98,16 @@ function MainApp({ isLoggingOut, setIsLoggingOut }) {
       if (!res.ok) {
         const errData = await res.json();
         setUsageError(errData.message || 'Error fetching usage');
+        setLoadingUsage(false);
         return;
       }
 
       const data = await res.json();
       setUsageCount(data.currentUsage ?? 0);
+      setMaxFilesAllowed(data.maxFilesAllowed ?? 3);
+      setMaxPagesAllowed(data.maxPagesAllowed ?? 10);
+      setMaxSizeAllowedMB(data.maxSizeAllowedMB ?? 25);
+
     } catch (err) {
       setUsageError(`Failed to fetch usage: ${err.message}`);
     } finally {
@@ -107,9 +115,25 @@ function MainApp({ isLoggingOut, setIsLoggingOut }) {
     }
   };
 
+  // FUNCTION: Initialize limits from ID token
+  const initializeLimitsFromProfile = () => {
+    if (auth.isAuthenticated && auth.user?.profile) {
+      const profile = auth.user.profile;
+
+      const customMaxFiles = profile['custom:max_files_allowed'];
+      const customMaxPages = profile['custom:max_pages_allowed'];
+      const customMaxSizeMB = profile['custom:max_size_allowed_MB'];
+      // console.log('Custom limits:', customMaxFiles, customMaxPages, customMaxSizeMB);
+      if (customMaxFiles) setMaxFilesAllowed(parseInt(customMaxFiles, 10));
+      if (customMaxPages) setMaxPagesAllowed(parseInt(customMaxPages, 10));
+      if (customMaxSizeMB) setMaxSizeAllowedMB(parseInt(customMaxSizeMB, 10));
+    }
+  };
+
   // Call refreshUsage whenever the user becomes authenticated
   useEffect(() => {
     if (auth.isAuthenticated) {
+      initializeLimitsFromProfile();
       refreshUsage();
     }
   }, [auth.isAuthenticated]);
@@ -170,6 +194,7 @@ function MainApp({ isLoggingOut, setIsLoggingOut }) {
             refreshUsage={refreshUsage}
             usageError={usageError}
             loadingUsage={loadingUsage}
+            maxFilesAllowed={maxFilesAllowed}
           />
 
           <FirstSignInDialog />
@@ -197,14 +222,18 @@ function MainApp({ isLoggingOut, setIsLoggingOut }) {
                 Drag & drop your PDF file below, or click to select it.
               </Typography>
 
-              {/* Pass usageCount and refreshUsage to UploadSection */}
-              <UploadSection
-                onUploadComplete={handleUploadComplete}
-                awsCredentials={awsCredentials}
-                currentUsage={usageCount}
-                onUsageRefresh={refreshUsage}
-                setUsageCount={setUsageCount}
-              />
+                      
+            <UploadSection
+              onUploadComplete={handleUploadComplete}
+              awsCredentials={awsCredentials}
+              currentUsage={usageCount}
+              maxFilesAllowed={maxFilesAllowed}
+              maxPagesAllowed={maxPagesAllowed}
+              maxSizeAllowedMB={maxSizeAllowedMB}
+              onUsageRefresh={refreshUsage}
+              setUsageCount={setUsageCount}
+            />
+
 
               {uploadedFileName && (
                 <Button

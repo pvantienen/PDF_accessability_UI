@@ -2,7 +2,7 @@
 import React, { useEffect } from 'react';
 import { Box, Typography } from '@mui/material';
 import { ThemeProvider } from '@mui/material/styles';
-import theme from '../theme';
+import theme from '../../theme';
 import { useAuth } from 'react-oidc-context';
 
 function LogoutPage({ setIsLoggingOut }) {

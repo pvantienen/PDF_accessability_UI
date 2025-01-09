@@ -12,7 +12,7 @@ import theme from './theme';
 import { UserPoolClientId, HostedUIUrl, Authority } from './utilities/constants';
 
 import LandingPage from './pages/LandingPage';
-import LogoutPage from './components/LogoutPage';
+
 import MainApp from './MainApp';
 import CallbackPage from './pages/CallbackPage'; // New Callback Component
 
@@ -47,11 +47,6 @@ function AppRoutes() {
 
       {/* Callback Route */}
       <Route path="/callback" element={<CallbackPage />} /> 
-      {/* Logout Route */}
-      <Route
-        path="/logout"
-        element={<LogoutPage setIsLoggingOut={setIsLoggingOut} />}
-      />
 
       {/* Protected App Routes */}
       <Route

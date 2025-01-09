@@ -10,7 +10,7 @@ import { PDFDocument } from 'pdf-lib';
 
 import { region, Bucket, CheckAndIncrementQuota } from '../utilities/constants';
 
-function UploadSection({ onUploadComplete, awsCredentials, currentUsage, onUsageRefresh, setUsageCount }) {
+function UploadSection({ onUploadComplete, awsCredentials, currentUsage, maxFilesAllowed, maxPagesAllowed, maxSizeAllowedMB, onUsageRefresh, setUsageCount }) {
   const auth = useAuth();
   const fileInputRef = useRef(null);
 
@@ -26,7 +26,7 @@ function UploadSection({ onUploadComplete, awsCredentials, currentUsage, onUsage
     // Reset any existing error messages
     setErrorMessage('');
 
-    // 1) Basic PDF checks
+    // **1. Basic PDF Checks**
     if (file.type !== 'application/pdf') {
       setErrorMessage('Only PDF files are allowed.');
       setOpenSnackbar(true);
@@ -34,21 +34,21 @@ function UploadSection({ onUploadComplete, awsCredentials, currentUsage, onUsage
       return;
     }
 
-    if (file.size > 25 * 1024 * 1024) {
-      setErrorMessage('File size exceeds 25 MB limit.');
+    if (file.size > maxSizeAllowedMB * 1024 * 1024) {
+      setErrorMessage(`File size exceeds the ${maxSizeAllowedMB} MB limit.`);
       setOpenSnackbar(true);
       resetFileInput();
       return;
     }
 
-    // 2) Page count check with pdf-lib
+    // **2. Page Count Check with pdf-lib**
     try {
       const arrayBuffer = await file.arrayBuffer();
       const pdfDoc = await PDFDocument.load(arrayBuffer);
       const numPages = pdfDoc.getPageCount();
 
-      if (numPages > 10) {
-        setErrorMessage('PDF file cannot exceed 10 pages.');
+      if (numPages > maxPagesAllowed) {
+        setErrorMessage(`PDF file cannot exceed ${maxPagesAllowed} pages.`);
         setOpenSnackbar(true);
         resetFileInput();
         return;
@@ -71,14 +71,14 @@ function UploadSection({ onUploadComplete, awsCredentials, currentUsage, onUsage
   };
 
   const handleUpload = async () => {
-    // **1) Check if user has reached the upload limit**
-    if (currentUsage >= 3) { // Adjust the limit as per your requirements
-      setErrorMessage('You have reached the testing upload limit. To continue testing, please refer to the GitHub repository for instructions on installing and running the application locally.');
+    // **1. Check if user has reached the upload limit**
+    if (currentUsage >= maxFilesAllowed) {
+      setErrorMessage('You have reached your upload limit. Please contact support for further assistance.');
       setOpenSnackbar(true);
       return;
     }
 
-    // **2) Basic guards**
+    // **2. Basic Guards**
     if (!selectedFile) {
       setErrorMessage('Please select a PDF file before uploading.');
       setOpenSnackbar(true);
@@ -90,10 +90,10 @@ function UploadSection({ onUploadComplete, awsCredentials, currentUsage, onUsage
       return;
     }
 
-    // **3) Attempt to increment usage first**
+    // **3. Attempt to Increment Usage First**
     const userSub = auth.user?.profile?.sub;
     if (!userSub) {
-      setErrorMessage('No user "sub" found. Are you logged in?');
+      setErrorMessage('User identifier not found. Are you logged in?');
       setOpenSnackbar(true);
       return;
     }
@@ -101,7 +101,7 @@ function UploadSection({ onUploadComplete, awsCredentials, currentUsage, onUsage
     setIsUploading(true);
 
     try {
-      // Call your usage API to increment
+      // **4. Call the Usage API to Increment**
       const usageRes = await fetch(CheckAndIncrementQuota, {
         method: 'POST',
         headers: { 
@@ -112,15 +112,15 @@ function UploadSection({ onUploadComplete, awsCredentials, currentUsage, onUsage
       });
 
       if (!usageRes.ok) {
-        // e.g. 403 if user at limit, or other error
+        // e.g., 403 if user at limit, or other error
         const errData = await usageRes.json();
-        
-        // **Updated Error Message with Support Guidance**
+
+        // **Dynamic Error Message Based on Status Code**
         const quotaExceeded = usageRes.status === 403; // Assuming 403 indicates quota limit
         const message = quotaExceeded
-          ? 'You have reached the upload limit. Please reach out to our support team for assistance.'
-          : errData.message || 'You have reached the upload limit. Please reach out to our support team for assistance.';
-        
+          ? 'You have reached the upload limit. Please contact support for further assistance.'
+          : errData.message || 'An error occurred while checking your upload quota. Please try again later.';
+
         setErrorMessage(message);
         setOpenSnackbar(true);
         setIsUploading(false);
@@ -131,7 +131,7 @@ function UploadSection({ onUploadComplete, awsCredentials, currentUsage, onUsage
       const updatedUsage = usageData.newCount; // Updated usage count from the backend
       setUsageCount(updatedUsage);
       
-      // If success, proceed with S3 upload
+      // **5. Proceed with S3 Upload**
       const client = new S3Client({
         region,
         credentials: {
@@ -142,8 +142,9 @@ function UploadSection({ onUploadComplete, awsCredentials, currentUsage, onUsage
       });
 
       const timestamp = new Date().toISOString().replace(/[-:.TZ]/g, ''); // YYYYMMDDTHHMMSS format
-      const userEmail = auth.user?.profile?.email || ''; // Use email for unique filename
-      const uniqueFilename = `${userEmail}${timestamp}${selectedFile.name}`; // No sanitization
+      const userEmail = auth.user?.profile?.email || 'user'; // Use email for unique filename, fallback to 'user'
+      const sanitizedEmail = userEmail.replace(/[^a-zA-Z0-9]/g, '_'); // Replace non-alphanumerics with underscores
+      const uniqueFilename = `${sanitizedEmail}_${timestamp}_${selectedFile.name}`; // Sanitized and unique filename
 
       const params = {
         Bucket,
@@ -154,15 +155,15 @@ function UploadSection({ onUploadComplete, awsCredentials, currentUsage, onUsage
       const command = new PutObjectCommand(params);
       await client.send(command);
 
-      // Notify parent of completion
-      onUploadComplete(uniqueFilename,selectedFile.name);
+      // **6. Notify Parent of Completion**
+      onUploadComplete(uniqueFilename, selectedFile.name);
 
-      // 3) Tell parent (Header, etc.) to refresh usage
+      // **7. Refresh Usage**
       if (onUsageRefresh) {
         onUsageRefresh();
       }
 
-      // Reset
+      // **8. Reset File Input**
       resetFileInput();
     } catch (error) {
       console.error('Error uploading file:', error);
@@ -213,7 +214,7 @@ function UploadSection({ onUploadComplete, awsCredentials, currentUsage, onUsage
             Upload Your PDF
           </Typography>
           <Tooltip title="See Document Requirements in left navigation" placement="right">
-            <IconButton>
+            <IconButton aria-label="Document Requirements Info">
               <InfoOutlined />
             </IconButton>
           </Tooltip>
@@ -224,7 +225,8 @@ function UploadSection({ onUploadComplete, awsCredentials, currentUsage, onUsage
           accept=".pdf"
           onChange={handleFileInput}
           inputRef={fileInputRef}
-          inputProps={{ style: { display: 'block', margin: '1rem auto' } }}
+          inputProps={{ style: { display: 'block', margin: '1rem auto' }, 'aria-label': 'PDF File Upload Input' }}
+          sx={{ marginTop: '1rem' }}
         />
   
         <LoadingButton
@@ -245,6 +247,7 @@ function UploadSection({ onUploadComplete, awsCredentials, currentUsage, onUsage
             },
           }}
           loadingIndicator={<CircularProgress size={20} sx={{ color: 'white' }} />}
+          aria-label="Upload PDF Button"
         >
           {isUploading
             ? 'Uploading...'
@@ -261,12 +264,12 @@ function UploadSection({ onUploadComplete, awsCredentials, currentUsage, onUsage
         onClose={handleCloseSnackbar}
         anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
       >
-        <Alert onClose={handleCloseSnackbar} severity="error" sx={{ width: '100%' }}>
+        <Alert onClose={handleCloseSnackbar} severity="error" sx={{ width: '100%' }} elevation={6} variant="filled">
           {errorMessage}
         </Alert>
       </Snackbar>
     </motion.div>
-  );}
-  
+  );
+}
 
 export default UploadSection;
