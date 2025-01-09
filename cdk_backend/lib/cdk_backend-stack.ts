@@ -58,12 +58,10 @@ export class CdkBackendStack extends cdk.Stack {
         }
       }),
     });
-    
-    amplifyApp.addCustomRule({
-      source: '</^[^.]+$|\.(?!(css|gif|ico|jpg|js|png|txt|svg|woff|woff2|ttf|map|json|webp)$)([^.]+$)/>',
-      target: '/index.html',
-      status: amplify.RedirectStatus.REWRITE
-    });
+
+    // VERY VERY IMPORANT THIS RULE IS STILL IMPORANT BUT PLEASE KEEP IN MIND THIS RULE NEEDS TO BE ADDED 
+    // AFTER THE APPLICATION IS DONE BUILDING AND NEEDS TO BE DELETED BEFORE DEPLOYING A NEW UPDATE 
+    // AND THEN NEEDS TO BE RE ADDED
 
     // amplifyApp.addCustomRule({
     //   source: '/<*>',
@@ -79,8 +77,9 @@ export class CdkBackendStack extends cdk.Stack {
     });
 
     const domainPrefix = 'pdf-ui-auth'; // must be globally unique in that region
-
-    // Construct Amplify app URL using known format without creating circular dependency
+    const Default_Group = 'DefaultUsers';
+    const Amazon_Group = 'AmazonUsers';
+    const Admin_Group = 'AdminUsers';
     const appUrl = `https://main.${amplifyApp.appId}.amplifyapp.com`;
     
     // Create the Lambda role first with necessary permissions
@@ -93,6 +92,7 @@ export class CdkBackendStack extends cdk.Stack {
         effect: iam.Effect.ALLOW,
         actions: [
           'cognito-idp:AdminUpdateUserAttributes',
+          'cognito-idp:AdminAddUserToGroup',
           'logs:CreateLogGroup',
           'logs:CreateLogStream',
           'logs:PutLogEvents'
@@ -107,7 +107,12 @@ export class CdkBackendStack extends cdk.Stack {
       handler: 'index.handler',
       code: lambda.Code.fromAsset('lambda/postConfirmation/'),
       timeout: cdk.Duration.seconds(30),
-      role: postConfirmationLambdaRole
+      role: postConfirmationLambdaRole,
+      environment: {
+        DEFAULT_GROUP_NAME: Default_Group,
+        AMAZON_GROUP_NAME: Amazon_Group,
+        ADMIN_GROUP_NAME: Admin_Group,
+      },
     });
 
     // ------------------- Cognito: User Pool, Domain, Client -------------------
@@ -133,11 +138,13 @@ export class CdkBackendStack extends cdk.Stack {
       customAttributes: {
         first_sign_in: new cognito.BooleanAttribute({ mutable: true }),
         total_files_uploaded: new cognito.NumberAttribute({ mutable: true }),
+        max_files_allowed: new cognito.NumberAttribute({ mutable: true }),
+        max_pages_allowed: new cognito.NumberAttribute({ mutable: true }),
+        max_size_allowed_MB: new cognito.NumberAttribute({ mutable: true }),
         organization: new cognito.StringAttribute({ mutable: true }),
         country: new cognito.StringAttribute({ mutable: true }),
         state: new cognito.StringAttribute({ mutable: true }),
         city: new cognito.StringAttribute({ mutable: true }),
-        
       },
       accountRecovery: cognito.AccountRecovery.EMAIL_ONLY,
       lambdaTriggers: {
@@ -145,6 +152,30 @@ export class CdkBackendStack extends cdk.Stack {
       },
     });
     
+    // ------------------- Cognito: User Groups -------------------
+      const defaultUsersGroup = new cognito.CfnUserPoolGroup(this, 'Default_Group', {
+        groupName: Default_Group,
+        userPoolId: userPool.userPoolId,
+        description: 'Group for default or normal users',
+        precedence: 1, // Determines the priority of the group
+      });
+
+      // Amazon Users Group
+      const amazonUsersGroup = new cognito.CfnUserPoolGroup(this, 'AmazonUsersGroup', {
+        groupName: Amazon_Group,
+        userPoolId: userPool.userPoolId,
+        description: 'Group for Amazon Employees',
+        precedence: 2,
+      });
+
+      // Admin Users Group
+      const adminUsersGroup = new cognito.CfnUserPoolGroup(this, 'AdminUsersGroup', {
+        groupName: Admin_Group,
+        userPoolId: userPool.userPoolId,
+        description: 'Group for admin users with elevated permissions',
+        precedence: 0, // Higher precedence means higher priority
+      });
+
     // Domain prefix is defined above with appUrl
     const userPoolDomain = new cognito.CfnUserPoolDomain(this, 'PDF-Accessability-User-Pool-Domain', {
       domain: domainPrefix,
