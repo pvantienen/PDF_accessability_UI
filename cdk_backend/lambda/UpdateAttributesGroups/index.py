@@ -7,23 +7,34 @@ from botocore.exceptions import ClientError
 cognito_client = boto3.client('cognito-idp')
 
 # ======== Hardcoded Configuration ========
+###########################################
 
-USER_POOL_ID = 'USERPOOLID'  # Replace with your Cognito User Pool ID
-GROUP_NAME = 'GROUPNAME'  # The name of the Cognito group to target
+USER_POOL_ID = 'userpoolid'  # Replace with your Cognito User Pool ID found in overview of userpool
+GROUP_NAME = 'AdminUsers'  # The name of the Cognito group to target
+
+###########################################
 
 # Set to True to update all users in the group; False to update a specific user
 UPDATE_ALL = True  # True | False
-USER_SUB = 'USER_SUB'  # Required if UPDATE_ALL is False | Can be found in the Cognito User Pool for a specific user
+USER_SUB = 'USERSUB'  # Required only if UPDATE_ALL is False | Can be found in the Cognito User Pool for a specific user
 
-# Define custom attribute limits for the group
+###########################################
+
+# Define custom attribute limits for the group or the specfic user
 # Comment out or remove any attributes you don't want to update
 GROUP_LIMITS = {
-    "custom:max_files_allowed": "10000",
-    "custom:max_pages_allowed": "2500",
-    "custom:max_size_allowed_MB": "1000",
+    "custom:max_files_allowed": "500",
+    "custom:max_pages_allowed": "100",
+    "custom:max_size_allowed_MB": "25",
     # "custom:total_files_uploaded": "0", # Uncomment to reset the counter for total_files_uploaded
 }
 
+# To run the code, please deploy the code from the button on the left panel and 
+# after deploying please press on test and create new test event and then invoke to start the function
+
+###########################################
+#XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+# Please dont change the variables below for normal use XXXXXXXXXX <<<<<<<<<
 # Maximum number of retries for throttling
 MAX_RETRIES = 5
 # Base delay in seconds for exponential backoff
@@ -84,6 +95,7 @@ def handler(event, context):
 
         # Prepare the response
         response_message = {
+            "mode": "Update_ALL" if UPDATE_ALL else "Specfic User Updated",
             "message": "User attribute updates completed.",
             "total_users_processed": len(users_to_update),
             "successful_updates": len(updated_users),

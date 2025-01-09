@@ -359,6 +359,39 @@ export class CdkBackendStack extends cdk.Stack {
     githubToken_secret_manager.grantRead(amplifyApp);
 
 
+     // ------------------- Integration of UpdateAttributesGroups Lambda -------------------
+    // 1. Create IAM Role
+    const updateAttributesGroupsLambdaRole = new iam.Role(this, 'UpdateAttributesGroupsLambdaRole', {
+      assumedBy: new iam.ServicePrincipal('lambda.amazonaws.com'),
+      description: 'IAM role for UpdateAttributesGroups Lambda function',
+    });
+
+    updateAttributesGroupsLambdaRole.addToPolicy(new iam.PolicyStatement({
+      effect: iam.Effect.ALLOW,
+      actions: [
+        'cognito-idp:ListUsersInGroup',
+        'cognito-idp:AdminGetUser',
+        'cognito-idp:AdminUpdateUserAttributes',
+        'cognito-idp:AdminListGroupsForUser',
+        'logs:CreateLogGroup',
+        'logs:CreateLogStream',
+        'logs:PutLogEvents'
+      ],
+      resources: [
+        userPool.userPoolArn,
+        `${userPool.userPoolArn}/*` // Allows access to all resources within the User Pool
+      ],
+    }));
+
+    // 2. Create the Lambda function
+    const updateAttributesGroupsFn = new lambda.Function(this, 'UpdateAttributesGroupsFn', {
+      runtime: lambda.Runtime.PYTHON_3_9,
+      handler: 'index.handler',
+      code: lambda.Code.fromAsset('lambda/UpdateAttributesGroups/'), // Ensure this path is correct
+      timeout: cdk.Duration.seconds(900),
+      role: updateAttributesGroupsLambdaRole,
+    });
+
     
     // --------------------------- Outputs ------------------------------
     new cdk.CfnOutput(this, 'UserPoolId', { value: userPool.userPoolId });
