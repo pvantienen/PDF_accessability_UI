@@ -237,7 +237,7 @@ const LandingPage = () => {
                 color: '#000',
                 fontWeight: 'bold',
                 fontSize: '1.2rem', // Larger button text
-                width: 280, // Increased button width
+                width: 350, // Increased button width
                 height: 50, // Increased button height
                 overflow: 'hidden', // Ensure content stays inside
                 position: 'relative',
@@ -256,7 +256,7 @@ const LandingPage = () => {
                 },
               }}
             >
-              Remediate My PDF
+              Login and Remediate My PDF
             </LoadingButton>
           </GradientBox>
         </Box>
