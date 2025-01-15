@@ -379,7 +379,9 @@ export class CdkBackendStack extends cdk.Stack {
         'cognito-idp:AdminListGroupsForUser',
         'logs:CreateLogGroup',
         'logs:CreateLogStream',
-        'logs:PutLogEvents'
+        'logs:PutLogEvents',
+        //cloudwatch logs
+      
       ],
       resources: [
         userPool.userPoolArn,
@@ -397,37 +399,33 @@ export class CdkBackendStack extends cdk.Stack {
     });
 
 
-    // const cognitoTrail = new cloudtrail.Trail(this, 'CognitoTrail', {
-    //   isMultiRegionTrail: true,
-    //   includeGlobalServiceEvents: true,
-    // });
-
-    // cognitoTrail.addEventSelector(cloudtrail.DataResourceType.LAMBDA_FUNCTION, [
-    //   `arn:aws:cognito-idp:${this.region}:${this.account}:userpool/${userPool.userPoolId}`
-    // ]);
-
-    // // --------- Create EventBridge Rule for Cognito Group Changes ----------
-    // const cognitoGroupChangeRule = new events.Rule(this, 'CognitoGroupChangeRule', {
-    //   eventPattern: {
-    //     source: ['aws.cognito-idp'],
-    //     detailType: ['AWS API Call via CloudTrail'],
-    //     detail: {
-    //       eventName: ['AdminAddUserToGroup', 'AdminRemoveUserFromGroup'],
-    //       requestParameters: {
-    //         userPoolId: [userPool.userPoolId],
-    //       },
-    //     },
-    //   },
-    // });
-
-    // // Set the target to the existing Lambda function
-    // cognitoGroupChangeRule.addTarget(new targets.LambdaFunction(updateAttributesGroupsFn));
-
-    // // Grant EventBridge permission to invoke the Lambda function
-    // updateAttributesGroupsFn.addPermission('AllowEventBridgeInvoke', {
-    //   principal: new iam.ServicePrincipal('events.amazonaws.com'),
-    //   sourceArn: cognitoGroupChangeRule.ruleArn,
-    // });
+    const cognitoTrail = new cloudtrail.Trail(this, 'CognitoTrail', {
+      isMultiRegionTrail: true,
+      includeGlobalServiceEvents: true,
+    });
+    
+    // Remove the incorrect event selector
+    // No need to add specific data resource for Cognito events
+    
+    const cognitoGroupChangeRule = new events.Rule(this, 'CognitoGroupChangeRule', {
+      eventPattern: {
+        source: ['aws.cognito-idp'],
+        detailType: ['AWS API Call via CloudTrail'],
+        detail: {
+          eventName: ['AdminAddUserToGroup', 'AdminRemoveUserFromGroup'],
+          requestParameters: {
+            userPoolId: [userPool.userPoolId],
+          },
+        },
+      },
+    });
+    
+    cognitoGroupChangeRule.addTarget(new targets.LambdaFunction(updateAttributesGroupsFn));
+    
+    updateAttributesGroupsFn.addPermission('AllowEventBridgeInvoke', {
+      principal: new iam.ServicePrincipal('events.amazonaws.com'),
+      sourceArn: cognitoGroupChangeRule.ruleArn,
+    });
     
     // --------------------------- Outputs ------------------------------
     new cdk.CfnOutput(this, 'UserPoolId', { value: userPool.userPoolId });
