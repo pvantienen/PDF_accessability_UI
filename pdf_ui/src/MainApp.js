@@ -195,7 +195,7 @@ function MainApp({ isLoggingOut, setIsLoggingOut }) {
             usageError={usageError}
             loadingUsage={loadingUsage}
             maxFilesAllowed={maxFilesAllowed}
-          />
+          /> 
 
           <FirstSignInDialog />
 

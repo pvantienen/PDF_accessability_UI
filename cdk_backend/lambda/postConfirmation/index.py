@@ -50,8 +50,8 @@ def handler(event, context):
         if user_email.endswith('@amazon.com'):
             assigned_group = AMAZON_GROUP
         # Example logic to assign to AdminUsers based on a specific condition
-        elif user_email.endswith('@admin.com'):
-            assigned_group = ADMIN_GROUP
+        # elif user_email.endswith('@admin.com'):
+        #     assigned_group = ADMIN_GROUP
 
         # Add user to the assigned group
         cognito_idp.admin_add_user_to_group(

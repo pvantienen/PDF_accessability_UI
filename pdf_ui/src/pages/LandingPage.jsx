@@ -18,18 +18,17 @@ import LoadingButton from '@mui/lab/LoadingButton'; // Import LoadingButton
 import CircularProgress from '@mui/material/CircularProgress'; // Import CircularProgress
 
 // Images (adjust paths to match your setup)
-import asuLogo from '../assets/ASU_AI_CIC_LOGO.svg';
+import asuLogo from '../assets/ASU_CIC_LOGO_WHITE.png';
 import gradientImg from '../assets/Gradient.svg';
-import awsLogo from '../assets/POWERED_BY_AWS.svg';
+import awsLogo from '../assets/POWERED_BY_AWS.png';
 import bottomGradient from '../assets/bottom_gradient.svg'; // Bottom gradient asset
-
-
 
 // Styled Components
 
 const StyledLink = styled(Link)(({ theme }) => ({
   color: '#8C1D40', // Custom color for links
   textDecoration: 'underline',
+  component: 'a', // Ensure it behaves like a link
   '&:hover': {
     color: '#70122F', // Slightly darker shade on hover
   },
@@ -39,6 +38,7 @@ const StyledLink = styled(Link)(({ theme }) => ({
 const StyledEmailLink = styled(Link)(({ theme }) => ({
   color: '#8C1D40', // Custom color for email links
   textDecoration: 'none',
+  component: 'a', // Ensure it behaves like a link
   '&:hover': {
     color: '#70122F', // Slightly darker shade on hover
     textDecoration: 'underline', // Optional: underline on hover for better UX
@@ -110,6 +110,21 @@ const LandingPage = () => {
         flexDirection: 'column',
       }}
     >
+      {/* New Top Black Area */}
+      <Box
+        sx={{
+          backgroundColor: '#000', // Black background
+          height: '36px', // Adjust the height as needed
+          width: '100%',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          // Optional: Add any content or leave it empty for just spacing
+        }}
+      >
+        {/* Optional: You can add content here, such as a navigation menu or title */}
+      </Box>
+
       {/* Bottom Gradient */}
       <Box
         sx={{
@@ -124,24 +139,6 @@ const LandingPage = () => {
           zIndex: -1, // Ensure it stays behind the main content
         }}
       />
-
-      {/* Full-width top logo */}
-      <Box
-        sx={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          px: 6,
-          py: 2,
-          borderBottom: '1px solid #ddd',
-        }}
-      >
-        <img
-          src={asuLogo}
-          alt="ASU AI CIC Logo"
-          style={{ height: 60, width: 'auto' }}
-        />
-      </Box>
 
       {/* Black Section: Includes Text + Enlarged Gradient */}
       <Box
@@ -169,20 +166,20 @@ const LandingPage = () => {
             minWidth: '300px', // Ensures content doesn't get too narrow
           }}
         >
-          <Typography variant="h4" sx={{ fontWeight: 'bold', mb: 2 }}>
+          <Typography variant="h4" component="h1" sx={{ fontWeight: 'bold', mb: 2 }}>
             PDF Accessibility Remediation
           </Typography>
 
-          <Typography variant="h5" sx={{ fontWeight: 'medium', mb: 2 }}>
+          <Typography variant="h5" component="h2" sx={{ fontWeight: 'medium', mb: 2 }}>
             About this solution:
           </Typography>
-          <Typography variant="body1" paragraph>
+          <Typography variant="body1" component="h3" paragraph>
             This solution was created by the Arizona State University Artificial
             Intelligence Cloud Innovation Center (AI CIC), powered by Amazon Web
             Services (AWS), to tackle a significant challenge in the digital
             era: improving the accessibility of digital document collections.
           </Typography>
-          <Typography variant="body1" paragraph>
+          <Typography variant="body1" component="h3" paragraph>
             With the Department of Justice’s April 2024 updates to how the
             Americans with Disabilities Act (ADA) will be regulated, the AI CIC
             developed a scalable open‐source solution that quickly and
@@ -190,11 +187,44 @@ const LandingPage = () => {
             AA standards. For bulk processing, 10 pages would cost
             approximately $0.013 for AWS service costs + Adobe API costs.
           </Typography>
-          <Typography variant="body1" paragraph>
-            To test out this open‐source solution, click the button below to
-            briefly create an account, upload your document, and receive your
+          <Typography variant="body1" component="h3" paragraph>
+            To test out this open‐source solution,{' '}
+            <Box component="span" sx={{ color: '#FFC627', fontWeight: 'bold' }}>
+              click the button to the right
+            </Box>{' '}
+            to briefly create an account, upload your document, and receive your
             remediated PDF in return.
           </Typography>
+
+          {/* Provided By Section */}
+          <Box
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              mt: 4, // Margin top for spacing from the text above
+            }}
+          >
+            <Typography variant="body1" component="h3" sx={{ mr: 1, fontWeight: 'bold' }}>
+              Provided by:
+            </Typography>
+            <Box
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+              }}
+            >
+              <img
+                src={asuLogo}
+                alt="ASU AI CIC Logo (white)"
+                style={{ height: 70, width: 'auto', marginRight: '16px' }} // Adjust height and margin as needed
+              />
+              <img
+                src={awsLogo}
+                alt="Powered by AWS logo (white)"
+                style={{ height: 40, width: 'auto' }} // Adjust height as needed
+              />
+            </Box>
+          </Box>
         </Box>
 
         {/* Right Side: Enlarged Gradient Box with Button */}
@@ -210,7 +240,8 @@ const LandingPage = () => {
         >
           <GradientBox>
             <Typography
-              variant="h5" // Larger text
+              variant="h5"
+              component="h2" // Larger text
               sx={{
                 mb: 4,
                 color: '#FFC627', // Yellow color for the text
@@ -226,6 +257,7 @@ const LandingPage = () => {
               endIcon={<ArrowForwardIosIcon />}
               onClick={handleSignIn}
               loading={loading}
+              component="button"
               loadingIndicator={
                 <CircularProgress
                   size={24}
@@ -233,7 +265,7 @@ const LandingPage = () => {
                 />
               }
               sx={{
-                backgroundColor: '#FFC627',
+                backgroundColor: '#FFC627', // Default button color
                 color: '#000',
                 fontWeight: 'bold',
                 fontSize: '1.2rem', // Larger button text
@@ -247,7 +279,7 @@ const LandingPage = () => {
                 alignItems: 'center',
                 justifyContent: 'center',
                 '&:hover': {
-                  backgroundColor: '#e6ae22',
+                  backgroundColor: '#e6ae22', // Darker shade on hover
                   transform: 'scale(1.05)', // Enlarge on hover
                 },
                 // Optional: Adjust the loading state styles
@@ -261,8 +293,6 @@ const LandingPage = () => {
           </GradientBox>
         </Box>
       </Box>
-
-      {/* Yellow Line */}
       <Box
         sx={{
           height: '5px', // Thickness of the line
@@ -278,7 +308,7 @@ const LandingPage = () => {
           borderBottom: '1px solid #ddd',
         }}
       >
-        <Typography variant="h5" sx={{ mb: 2 }}>
+        <Typography variant="h5" component="h2" sx={{ mb: 2 }}>
           Support resources:
         </Typography>
         <List>
@@ -287,7 +317,7 @@ const LandingPage = () => {
               {/* Using the styled SmallFiberManualRecordIcon */}
               <SmallFiberManualRecordIcon size="12px" sx={{ color: '#000000' }} />
             </ListItemIcon>
-            <Typography variant="body1">
+            <Typography variant="body1" component="h3">
               This solution is available open source and can be added to your
               AWS account for usage and testing.
               <StyledLink
@@ -305,7 +335,7 @@ const LandingPage = () => {
               {/* Using the styled SmallFiberManualRecordIcon */}
               <SmallFiberManualRecordIcon size="12px" sx={{ color: '#000000' }} />
             </ListItemIcon>
-            <Typography variant="body1">
+            <Typography variant="body1" component="h3">
               Have questions about this solution or need support? Email us:{' '}
               <StyledEmailLink href="mailto:ai-cic@amazon.com">
                 ai-cic@amazon.com
@@ -340,16 +370,16 @@ const LandingPage = () => {
             zIndex: -1, // Keeps the asset behind the content
           }}
         />
-        <Typography variant="h5" sx={{ mb: 2 }}>
+        <Typography variant="h5" component="h2" sx={{ mb: 2 }}>
           About the AI CIC:
         </Typography>
-        <Typography variant="body1" paragraph>
+        <Typography variant="body1" component="h3" paragraph>
           The ASU Artificial Intelligence Cloud Innovation Center (AI CIC),
           powered by AWS, is a no‐cost design thinking and rapid prototyping
           shop dedicated to bridging the digital divide and driving innovation
           in the nonprofit, healthcare, education, and government sectors.
         </Typography>
-        <Typography variant="body1" paragraph>
+        <Typography variant="body1" component="h3" paragraph>
           Our expert team harnesses Amazon’s pioneering approach to dive deep into
           high-priority pain points, meticulously define challenges, and craft
           strategic solutions. We collaborate with AWS solutions architects and
@@ -357,7 +387,7 @@ const LandingPage = () => {
           how advanced technology can tackle a wide range of operational and
           mission-related challenges.
         </Typography>
-        <Typography variant="body1" paragraph>
+        <Typography variant="body1" component="h3" paragraph>
           Discover how we use technology to drive innovation. Visit our website at{' '}
           <StyledLink
             href="https://smartchallenges.asu.edu/challenges/pdf-accessibility-ohio-state-university"
@@ -374,22 +404,7 @@ const LandingPage = () => {
         </Typography>
       </Box>
 
-      {/* Footer: Powered by AWS */}
-      <Box
-        sx={{
-          mt: 2,
-          mr: 2,
-          mb: 2,
-          display: 'flex',
-          justifyContent: 'right',
-        }}
-      >
-        <img
-          src={awsLogo}
-          alt="Powered by AWS"
-          style={{ height: 40, width: 'auto' }}
-        />
-      </Box>
+      {/* Removed the Footer: Powered by AWS Section */}
     </Box>
   );
 };
