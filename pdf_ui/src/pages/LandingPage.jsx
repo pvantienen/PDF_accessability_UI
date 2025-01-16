@@ -357,6 +357,22 @@ const LandingPage = () => {
               <SmallFiberManualRecordIcon size="12px" sx={{ color: '#000000' }} />
             </ListItemIcon>
             <Typography variant="body1" component="h3">
+            Watch a recorded demo and review technical architecture:{' '}
+              <StyledLink
+                href="https://www.youtube.com/watch?v=Wl2Ut1AorLY&t=9s"
+                target="_blank"
+                rel="noopener"
+                sx={{ ml: 0.5 }}
+              >
+                Watch Demo
+              </StyledLink>
+            </Typography>
+          </ListItem>
+          <ListItem disablePadding sx={{ mb: 1 }}>
+            <ListItemIcon sx={{ minWidth: '24px' }}>
+              <SmallFiberManualRecordIcon size="12px" sx={{ color: '#000000' }} />
+            </ListItemIcon>
+            <Typography variant="body1" component="h3">
               This solution is available open source and can be added to your
               AWS account for usage and testing.
               <StyledLink
