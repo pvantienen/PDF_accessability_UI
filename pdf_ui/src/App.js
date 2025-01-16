@@ -14,14 +14,14 @@ import { UserPoolClientId, HostedUIUrl, Authority } from './utilities/constants'
 import LandingPage from './pages/LandingPage';
 
 import MainApp from './MainApp';
-import CallbackPage from './pages/CallbackPage'; // New Callback Component
+import CallbackPage from './pages/CallbackPage'; 
 
 const cognitoAuthConfig = {
   authority: `https://${Authority}`,
   client_id: UserPoolClientId,
-  redirect_uri: `${HostedUIUrl}/callback`, // Updated redirect_uri
+  redirect_uri: `${HostedUIUrl}/callback`, // Amplify redirect_uri
   post_logout_redirect_uri: `${HostedUIUrl}/home`,
-  // redirect_uri: 'http://localhost:3000/callback', // Updated redirect_uri
+  // redirect_uri: 'http://localhost:3000/callback', // Local redirect_uri
   // post_logout_redirect_uri: 'http://localhost:3000/home',
   response_type: 'code',
   scope: 'email openid phone profile',
