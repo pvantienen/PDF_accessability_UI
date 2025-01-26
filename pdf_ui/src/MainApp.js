@@ -232,6 +232,7 @@ function MainApp({ isLoggingOut, setIsLoggingOut }) {
               maxSizeAllowedMB={maxSizeAllowedMB}
               onUsageRefresh={refreshUsage}
               setUsageCount={setUsageCount}
+              isFileUploaded={!!uploadedFileName}
             />
 
 

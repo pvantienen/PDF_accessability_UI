@@ -10,7 +10,7 @@ import { PDFDocument } from 'pdf-lib';
 
 import { region, Bucket, CheckAndIncrementQuota } from '../utilities/constants';
 
-function UploadSection({ onUploadComplete, awsCredentials, currentUsage, maxFilesAllowed, maxPagesAllowed, maxSizeAllowedMB, onUsageRefresh, setUsageCount }) {
+function UploadSection({ onUploadComplete, awsCredentials, currentUsage, maxFilesAllowed, maxPagesAllowed, maxSizeAllowedMB, onUsageRefresh, setUsageCount, isFileUploaded}) {
   const auth = useAuth();
   const fileInputRef = useRef(null);
 
@@ -225,6 +225,7 @@ function UploadSection({ onUploadComplete, awsCredentials, currentUsage, maxFile
           accept=".pdf"
           onChange={handleFileInput}
           inputRef={fileInputRef}
+          disabled={isFileUploaded}
           inputProps={{ style: { display: 'block', margin: '1rem auto' }, 'aria-label': 'PDF File Upload Input' }}
           sx={{ marginTop: '1rem' }}
         />
