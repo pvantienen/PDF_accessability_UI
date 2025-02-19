@@ -21,10 +21,10 @@ import MaintenancePage from './pages/MaintenancePage';
 const cognitoAuthConfig = {
   authority: `https://${Authority}`,
   client_id: UserPoolClientId,
-  // redirect_uri: `${HostedUIUrl}/callback`, // Amplify redirect_uri
-  // post_logout_redirect_uri: `${HostedUIUrl}/home`,
-  redirect_uri: 'http://localhost:3000/callback', // Local redirect_uri
-  post_logout_redirect_uri: 'http://localhost:3000/home',
+  redirect_uri: `${HostedUIUrl}/callback`, // Amplify redirect_uri
+  post_logout_redirect_uri: `${HostedUIUrl}/home`,
+  // redirect_uri: 'http://localhost:3000/callback', // Local redirect_uri
+  // post_logout_redirect_uri: 'http://localhost:3000/home',
   response_type: 'code',
   scope: 'email openid phone profile',
 };
