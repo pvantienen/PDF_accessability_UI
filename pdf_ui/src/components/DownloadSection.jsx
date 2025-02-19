@@ -34,7 +34,7 @@ export default function DownloadSection({ originalFileName, updatedFilename, onF
         sessionToken: awsCredentials?.sessionToken,
       },
     });
-
+    
     const command = new GetObjectCommand({
       Bucket: Bucket,
       Key: key,

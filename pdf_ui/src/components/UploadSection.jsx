@@ -10,6 +10,19 @@ import { PDFDocument } from 'pdf-lib';
 
 import { region, Bucket, CheckAndIncrementQuota } from '../utilities/constants';
 
+function sanitizeFilename(filename) {
+  // Normalize the filename to decompose accented characters
+  const normalized = filename.normalize('NFD');
+  // Remove combining diacritical marks
+  const withoutDiacritics = normalized.replace(/[\u0300-\u036f]/g, '');
+  // Remove any characters outside of the ISO-8859-1 range.
+  // eslint-disable-next-line
+  const sanitized = withoutDiacritics.replace(/[^\u0000-\u00FF]/g, '');
+  // If the sanitized filename is empty, return a default value.
+  return sanitized.trim() ? sanitized : 'default.pdf';
+}
+
+
 function UploadSection({ onUploadComplete, awsCredentials, currentUsage, maxFilesAllowed, maxPagesAllowed, maxSizeAllowedMB, onUsageRefresh, setUsageCount, isFileUploaded}) {
   const auth = useAuth();
   const fileInputRef = useRef(null);
@@ -144,7 +157,9 @@ function UploadSection({ onUploadComplete, awsCredentials, currentUsage, maxFile
       const timestamp = new Date().toISOString().replace(/[-:.TZ]/g, ''); // YYYYMMDDTHHMMSS format
       const userEmail = auth.user?.profile?.email || 'user'; // Use email for unique filename, fallback to 'user'
       const sanitizedEmail = userEmail.replace(/[^a-zA-Z0-9]/g, '_'); // Replace non-alphanumerics with underscores
-      const uniqueFilename = `${sanitizedEmail}_${timestamp}_${selectedFile.name}`; // Sanitized and unique filename
+      const sanitizedFileName = sanitizeFilename(selectedFile.name) || 'default.pdf'; // Fallback to 'default.pdf' if sanitization fails 
+      const uniqueFilename = `${sanitizedEmail}_${timestamp}_${sanitizedFileName}`; // Combined unique filename
+      // const uniqueFilename = `${sanitizedEmail}_${timestamp}_${selectedFile.name}`; // Sanitized and unique filename
 
       const params = {
         Bucket,
@@ -156,7 +171,7 @@ function UploadSection({ onUploadComplete, awsCredentials, currentUsage, maxFile
       await client.send(command);
 
       // **6. Notify Parent of Completion**
-      onUploadComplete(uniqueFilename, selectedFile.name);
+      onUploadComplete(uniqueFilename,sanitizedFileName);
 
       // **7. Refresh Usage**
       if (onUsageRefresh) {
