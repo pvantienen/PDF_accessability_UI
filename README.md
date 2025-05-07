@@ -140,7 +140,7 @@ Key Component Interactions:
 
 ## Infrastructure
 
-![Infrastructure diagram](./docs/infra.svg)
+![Infrastructure diagram](infra.svg)
 
 The infrastructure is defined using AWS CDK and includes:
 
