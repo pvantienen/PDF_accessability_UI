@@ -91,7 +91,7 @@ const generatePresignedUrl = async (key, filename) => {
     Key: key,
     ResponseContentDisposition: `attachment; filename="${filename}"`,
   });
-  return await getSignedUrl(s3, command, { expiresIn: 3600 }); // 1 hour expiration
+  return await getSignedUrl(s3, command, { expiresIn: 30000 }); // 8.33 hour expiration
 };
 
   /**
