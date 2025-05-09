@@ -47,6 +47,12 @@ const LeftNav = () => {
               - Do not upload documents containing <strong>sensitive information</strong>.
             </Typography>
             <Typography variant="body2" gutterBottom>
+              - Do not <strong>bulk upload</strong> documents.
+            </Typography>
+            <Typography variant="body2" gutterBottom>
+              - Complete remediation for <strong>one document</strong> before adding a new one.
+            </Typography>
+            <Typography variant="body2" gutterBottom>
               - This solution only remediates <strong>PDF documents</strong>. Other document types will not be accepted.
             </Typography>
             <Typography variant="body2" gutterBottom>

@@ -42,7 +42,7 @@ export default function DownloadSection({ originalFileName, updatedFilename, onF
     });
 
     try {
-      const url = await getSignedUrl(s3, command, { expiresIn: 300 }); // 5 minutes expiration
+      const url = await getSignedUrl(s3, command, { expiresIn: 30000 }); // 8.33 hours expiration
       return url;
     } catch (error) {
       console.error('Error generating presigned URL:', error);
