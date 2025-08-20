@@ -1,0 +1,19 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": [
+        "s3:PutObject",
+        "s3:ListBucket",
+        "s3:GetObject"
+      ],
+      "Resource": [
+        "arn:aws:s3:::pdfaccessibility-pdfaccessibilitybucket149b7021e-bozihkmq6r52",
+        "arn:aws:s3:::pdfaccessibility-pdfaccessibilitybucket149b7021e-bozihkmq6r52/*",
+        "arn:aws:s3:::pdf2html-bucket-390402571123-us-east-1",
+        "arn:aws:s3:::pdf2html-bucket-390402571123-us-east-1/*"
+      ]
+    }
+  ]
+}

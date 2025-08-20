@@ -1,0 +1,17 @@
+.upload-page {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  padding-top: 88px;
+}
+
+.page-content {
+  flex: 1;
+  padding: 40px 20px;
+  text-align: center;
+}
+
+.information-section {
+  padding: 40px 20px;
+  background-color: #ffffff;
+}

@@ -1,0 +1,46 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "UploadPDFFiles",
+      "Effect": "Allow",
+      "Action": [
+        "s3:PutObject",
+        "s3:PutObjectAcl"
+      ],
+      "Resource": [
+        "arn:aws:s3:::pdfaccessibility-pdfaccessibilitybucket149b7021e-bozihkmq6r52/uploads/*",
+        "arn:aws:s3:::pdf2html-bucket-390402571123-us-east-1/uploads/*"
+      ]
+    },
+    {
+      "Sid": "ListBucketsForProcessedFiles",
+      "Effect": "Allow",
+      "Action": [
+        "s3:ListBucket"
+      ],
+      "Resource": [
+        "arn:aws:s3:::pdfaccessibility-pdfaccessibilitybucket149b7021e-bozihkmq6r52",
+        "arn:aws:s3:::pdf2html-bucket-390402571123-us-east-1"
+      ],
+      "Condition": {
+        "StringLike": {
+          "s3:prefix": [
+            "remediated/*"
+          ]
+        }
+      }
+    },
+    {
+      "Sid": "DownloadProcessedFiles",
+      "Effect": "Allow",
+      "Action": [
+        "s3:GetObject"
+      ],
+      "Resource": [
+        "arn:aws:s3:::pdfaccessibility-pdfaccessibilitybucket149b7021e-bozihkmq6r52/remediated/*",
+        "arn:aws:s3:::pdf2html-bucket-390402571123-us-east-1/remediated/*"
+      ]
+    }
+  ]
+}

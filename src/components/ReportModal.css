@@ -1,0 +1,256 @@
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  background-color: #ffffff;
+  border-radius: 16px;
+  width: 1040px;
+  max-width: 90vw;
+  max-height: 90vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.modal-header {
+  padding: 24px;
+  border-bottom: 1px solid #f1f5f9;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.modal-header h2 {
+  font-family: 'Geist', sans-serif;
+  font-size: 18px;
+  font-weight: 600;
+  color: #020617;
+  line-height: 20px;
+  margin: 0;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.download-report-btn {
+  background-color: #8c1d40;
+  color: #ffffff;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-family: 'Geist', sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 20px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.download-report-btn:hover {
+  background-color: #7a1936;
+}
+
+.close-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.close-btn img {
+  width: 12px;
+  height: 12px;
+}
+
+.modal-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 24px;
+  background-color: #ffffff;
+}
+
+.report-summary {
+  display: flex;
+  gap: 40px;
+  margin-bottom: 24px;
+}
+
+.summary-section {
+  flex: 1;
+}
+
+.summary-section h3 {
+  font-family: 'Geist', sans-serif;
+  font-size: 16px;
+  font-weight: 600;
+  color: #020617;
+  line-height: 24px;
+  margin: 0 0 24px 0;
+}
+
+.summary-stats {
+  border: 1px solid #f1f5f9;
+  border-radius: 8px;
+  overflow: hidden;
+  background-color: #ffffff;
+  padding: 16px;
+  display: flex;
+  gap: 16px;
+}
+
+.stat-column {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.stat-title {
+  font-family: 'Geist', sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  color: #475569;
+  line-height: 20px;
+  text-align: center;
+}
+
+.stat-badge {
+  width: 40px;
+  height: 40px;
+  min-width: 40px;
+  min-height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Geist', sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  color: #ffffff;
+  line-height: 16px;
+  aspect-ratio: 1;
+}
+
+.stat-badge.orange {
+  background-color: #f97316;
+}
+
+.stat-badge.green {
+  background-color: #059669;
+}
+
+.stat-badge.red {
+  background-color: #dc2626;
+}
+
+.detailed-report h3 {
+  font-family: 'Geist', sans-serif;
+  font-size: 16px;
+  font-weight: 600;
+  color: #020617;
+  line-height: 24px;
+  margin: 0 0 24px 0;
+}
+
+.report-section {
+  border: 1px solid #f1f5f9;
+  border-radius: 8px;
+  margin-bottom: 8px;
+  overflow: hidden;
+}
+
+.section-header {
+  background-color: #f8fafc;
+  padding: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-family: 'Geist', sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  color: #475569;
+  line-height: 20px;
+  cursor: pointer;
+}
+
+.section-header img {
+  width: 24px;
+  height: 24px;
+}
+
+.section-content {
+  background-color: #ffffff;
+}
+
+.table-header {
+  padding: 16px;
+  display: grid;
+  grid-template-columns: 240px 1fr 173px 173px;
+  gap: 40px;
+  font-family: 'Geist', sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  color: #475569;
+  line-height: 20px;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.table-row {
+  padding: 12px 16px;
+  display: grid;
+  grid-template-columns: 240px 1fr 173px 173px;
+  gap: 40px;
+  font-family: 'Geist', sans-serif;
+  font-size: 14px;
+  font-weight: 400;
+  color: #475569;
+  line-height: 20px;
+  align-items: center;
+}
+
+.status-badge {
+  padding: 8px 16px;
+  border-radius: 100px;
+  font-family: 'Geist', sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+  color: #ffffff;
+  line-height: 16px;
+  text-align: center;
+  width: fit-content;
+}
+
+.status-badge.green {
+  background-color: #059669;
+}
+
+.status-badge.red {
+  background-color: #dc2626;
+}
+
+.status-badge.orange {
+  background-color: #f97316;
+}
+
+.report-section:not(.expanded) .section-content {
+  display: none;
+}
