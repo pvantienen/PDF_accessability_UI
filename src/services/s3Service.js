@@ -1,4 +1,5 @@
-import { S3Client, PutObjectCommand, ListObjectsV2Command } from '@aws-sdk/client-s3';
+import { S3Client, PutObjectCommand, ListObjectsV2Command, GetObjectCommand } from '@aws-sdk/client-s3';
+import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { fromCognitoIdentityPool } from '@aws-sdk/credential-provider-cognito-identity';
 import { CognitoIdentityClient } from '@aws-sdk/client-cognito-identity';
 import { BUCKET_CONFIGS, IndentityPoolId, region } from '../utilities/constants';
@@ -367,7 +368,7 @@ class S3Service {
     }
   }
 
-  async getDownloadUrl(format, fileName) {
+  async getDownloadUrl(format, fileName, expiresIn = 3600) {
     const config = BUCKET_CONFIGS[format];
     let processedFileName;
 
@@ -383,11 +384,68 @@ class S3Service {
     const key = `${config.outputFolder}${processedFileName}`;
 
     try {
-      // For demo purposes, return a mock download URL
-      // In production, you'd use getSignedUrl from @aws-sdk/s3-request-presigner
-      return `https://${config.bucketName}.s3.${config.region}.amazonaws.com/${key}`;
+      // Check if we have proper AWS credentials configured
+      const hasCredentials = process.env.REACT_APP_AWS_ACCESS_KEY_ID ||
+        (IndentityPoolId && IndentityPoolId !== 'your-identity-pool-id');
+
+      if (!hasCredentials) {
+        // Return mock download URL for demo mode
+        console.log(`🎭 [DEMO MODE] Generating mock download URL for: ${processedFileName}`);
+        console.log(`📁 [DEMO MODE] Bucket: ${config.bucketName}`);
+        console.log(`🔑 [DEMO MODE] Key: ${key}`);
+        
+        // Return a blob URL for demo purposes (you could generate a mock file here)
+        const mockUrl = `https://demo-download.example.com/${processedFileName}?demo=true&expires=${Date.now() + (expiresIn * 1000)}`;
+        console.log(`🔗 [DEMO MODE] Mock download URL: ${mockUrl}`);
+        
+        return {
+          url: mockUrl,
+          expires: new Date(Date.now() + (expiresIn * 1000)),
+          mock: true
+        };
+      }
+
+      console.log(`🔗 [PRODUCTION] Generating signed URL for: ${processedFileName}`);
+      console.log(`📁 [PRODUCTION] Bucket: ${config.bucketName}`);
+      console.log(`🔑 [PRODUCTION] Key: ${key}`);
+      console.log(`⏰ [PRODUCTION] Expires in: ${expiresIn} seconds`);
+
+      const command = new GetObjectCommand({
+        Bucket: config.bucketName,
+        Key: key,
+        ResponseContentDisposition: `attachment; filename="${processedFileName}"`
+      });
+
+      const signedUrl = await getSignedUrl(this.clients[format], command, {
+        expiresIn: expiresIn
+      });
+
+      console.log(`✅ [PRODUCTION] Signed URL generated successfully`);
+      console.log(`🔗 [PRODUCTION] URL expires at: ${new Date(Date.now() + (expiresIn * 1000)).toISOString()}`);
+
+      return {
+        url: signedUrl,
+        expires: new Date(Date.now() + (expiresIn * 1000)),
+        bucket: config.bucketName,
+        key: key
+      };
+
     } catch (error) {
-      console.error('Error generating download URL:', error);
+      console.error('❌ Error generating download URL:', error);
+
+      // Handle different error types
+      if (error.message.includes('NoSuchKey') || error.message.includes('Not Found')) {
+        throw new Error(`File not found: ${processedFileName}. Make sure the file processing is complete.`);
+      }
+
+      if (error.message.includes('Access Denied') || error.message.includes('Forbidden')) {
+        throw new Error(`Access denied. Check if your credentials have s3:GetObject permission for ${config.bucketName}/${key}`);
+      }
+
+      if (error.message.includes('Credential') || error.message.includes('credentials')) {
+        throw new Error(`AWS credentials error. Please check your configuration.`);
+      }
+
       throw new Error(`Failed to generate download URL: ${error.message}`);
     }
   }
