@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useAuth } from 'react-oidc-context';
 import './ProcessingContainer.css';
 import img from "../assets/file-clock.svg";
 import img1 from "../assets/clock-4.svg";
@@ -10,6 +11,7 @@ const ProcessingContainer = ({ fileName, fileSize, format, onComplete }) => {
   const [timeElapsed, setTimeElapsed] = useState(0);
   const [processingStatus, setProcessingStatus] = useState('processing');
   const [error, setError] = useState(null);
+  const auth = useAuth();
 
   const steps = [
     {
@@ -29,6 +31,14 @@ const ProcessingContainer = ({ fileName, fileSize, format, onComplete }) => {
       description: "Creating your accessible PDF document"
     }
   ];
+
+  useEffect(() => {
+    // Update S3Service with current auth state
+    s3Service.updateAuthState(
+      auth.user?.id_token,
+      auth.isAuthenticated
+    );
+  }, [auth.isAuthenticated, auth.user?.id_token]);
 
   useEffect(() => {
     console.log('🔍 [PROCESSING CONTAINER] useEffect triggered with props:');

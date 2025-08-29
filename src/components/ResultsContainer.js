@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useAuth } from 'react-oidc-context';
 import './ResultsContainer.css';
 import ReportModal from './ReportModal';
 import img from "../assets/circle-check-big.svg";
@@ -8,6 +9,15 @@ import s3Service from '../services/s3Service';
 const ResultsContainer = ({ fileName, processedResult, format, fileSize = "1.2 MB", processingTime = "5:00 minutes" }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
+  const auth = useAuth();
+
+  useEffect(() => {
+    // Update S3Service with current auth state
+    s3Service.updateAuthState(
+      auth.user?.id_token,
+      auth.isAuthenticated
+    );
+  }, [auth.isAuthenticated, auth.user?.id_token]);
 
   const handleViewReport = () => {
     setIsModalOpen(true);

@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useAuth } from 'react-oidc-context';
 import './UploadContainer.css';
 import imgFileQuestion from '../assets/file-question.svg';
 import imgFileText from '../assets/file-text.svg';
@@ -14,6 +15,15 @@ const UploadContainer = ({ onUploadComplete }) => {
   const [isUploading, setIsUploading] = useState(false);
   const [uploadError, setUploadError] = useState(null);
   const [showTroubleshooting, setShowTroubleshooting] = useState(false);
+  const auth = useAuth();
+
+  useEffect(() => {
+    // Update S3Service with current auth state
+    s3Service.updateAuthState(
+      auth.user?.id_token,
+      auth.isAuthenticated
+    );
+  }, [auth.isAuthenticated, auth.user?.id_token]);
 
   const handleFormatSelect = (format) => {
     setSelectedFormat(format);

@@ -1,9 +1,19 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useAuth } from 'react-oidc-context';
 import s3Service from '../services/s3Service';
 
 const TroubleshootingModal = ({ isOpen, onClose }) => {
   const [testResults, setTestResults] = useState({});
   const [testing, setTesting] = useState(false);
+  const auth = useAuth();
+
+  useEffect(() => {
+    // Update S3Service with current auth state
+    s3Service.updateAuthState(
+      auth.user?.id_token,
+      auth.isAuthenticated
+    );
+  }, [auth.isAuthenticated, auth.user?.id_token]);
 
   const runDiagnostics = async () => {
     setTesting(true);

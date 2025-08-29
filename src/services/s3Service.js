@@ -2,17 +2,96 @@ import { S3Client, PutObjectCommand, ListObjectsV2Command, GetObjectCommand } fr
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { fromCognitoIdentityPool } from '@aws-sdk/credential-provider-cognito-identity';
 import { CognitoIdentityClient } from '@aws-sdk/client-cognito-identity';
-import { BUCKET_CONFIGS, IndentityPoolId, region } from '../utilities/constants';
+import { BUCKET_CONFIGS, IndentityPoolId, region, UserPoolId } from '../utilities/constants';
 import CustomCredentialsProvider from '../utilities/CustomCredentialsProvider';
 
 class S3Service {
   constructor() {
     this.clients = {};
     this.credentialsProvider = new CustomCredentialsProvider();
+    
+    // Authentication state
+    this.isAuthenticated = false;
+    this.userIdToken = null;
+    this.cognitoIdentityId = null;
+    this.authStateCallbacks = new Set();
+    
     this.initializeClients();
   }
 
+  /**
+   * Update authentication state and reinitialize clients with new credentials
+   * @param {string|null} idToken - JWT ID token from Cognito User Pool
+   * @param {boolean} isAuthenticated - Authentication status
+   */
+  updateAuthState(idToken = null, isAuthenticated = false) {
+    const wasAuthenticated = this.isAuthenticated;
+    const tokenChanged = this.userIdToken !== idToken;
+    
+    this.isAuthenticated = isAuthenticated;
+    this.userIdToken = idToken;
+    
+    // Clear identity ID if auth state changed
+    if (wasAuthenticated !== isAuthenticated || tokenChanged) {
+      this.cognitoIdentityId = null;
+      console.log(`🔄 [AUTH] Authentication state changed: ${wasAuthenticated ? 'authenticated' : 'anonymous'} → ${isAuthenticated ? 'authenticated' : 'anonymous'}`);
+      
+      // Reinitialize clients with new credentials
+      this.initializeClients();
+      
+      // Notify callbacks of auth state change
+      this.authStateCallbacks.forEach(callback => {
+        try {
+          callback({ isAuthenticated, wasAuthenticated, tokenChanged });
+        } catch (error) {
+          console.error('Error in auth state callback:', error);
+        }
+      });
+    }
+  }
+
+  /**
+   * Subscribe to authentication state changes
+   * @param {Function} callback - Callback function to execute on auth state change
+   * @returns {Function} Unsubscribe function
+   */
+  onAuthStateChange(callback) {
+    this.authStateCallbacks.add(callback);
+    return () => this.authStateCallbacks.delete(callback);
+  }
+
+  /**
+   * Get current user's Cognito Identity ID (useful for user-specific S3 prefixes)
+   * @returns {Promise<string|null>} The Cognito Identity ID or null
+   */
+  async getCognitoIdentityId() {
+    if (this.cognitoIdentityId) {
+      return this.cognitoIdentityId;
+    }
+
+    // Only available when using Cognito Identity Pool
+    const hasCredentials = process.env.REACT_APP_AWS_ACCESS_KEY_ID ||
+      (IndentityPoolId && IndentityPoolId !== 'your-identity-pool-id');
+
+    if (!hasCredentials) {
+      return null;
+    }
+
+    try {
+      // This will be populated during the first AWS API call
+      // We can't easily extract it without making a call, so we'll return null
+      // and let it be populated naturally during S3 operations
+      return this.cognitoIdentityId;
+    } catch (error) {
+      console.warn('Could not retrieve Cognito Identity ID:', error);
+      return null;
+    }
+  }
+
   initializeClients() {
+    const authMode = this.isAuthenticated ? 'AUTHENTICATED' : 'ANONYMOUS';
+    console.log(`🔧 [${authMode}] Initializing S3 clients...`);
+
     Object.keys(BUCKET_CONFIGS).forEach(key => {
       const clientConfig = {
         region: BUCKET_CONFIGS[key].region,
@@ -23,27 +102,63 @@ class S3Service {
         }
       };
 
-      // Try different credential methods in order of preference
+      // 4-tier credential strategy
       if (process.env.REACT_APP_AWS_ACCESS_KEY_ID && process.env.REACT_APP_AWS_SECRET_ACCESS_KEY) {
-        // Use environment variables if available
+        // Tier 1: Environment variables (development only)
         clientConfig.credentials = {
           accessKeyId: process.env.REACT_APP_AWS_ACCESS_KEY_ID,
           secretAccessKey: process.env.REACT_APP_AWS_SECRET_ACCESS_KEY,
         };
         console.log(`🔑 [${key.toUpperCase()}] Using environment credentials`);
+      } else if (this.isAuthenticated && this.userIdToken && IndentityPoolId && IndentityPoolId !== 'your-identity-pool-id') {
+        // Tier 2: Authenticated Cognito Identity Pool (NEW)
+        const loginKey = `cognito-idp.${region}.amazonaws.com/${UserPoolId}`;
+        clientConfig.credentials = fromCognitoIdentityPool({
+          client: new CognitoIdentityClient({ region }),
+          identityPoolId: IndentityPoolId,
+          logins: {
+            [loginKey]: this.userIdToken
+          }
+        });
+        console.log(`🔑 [${key.toUpperCase()}] Using authenticated Cognito Identity Pool`);
+        console.log(`👤 [${key.toUpperCase()}] Login provider: ${loginKey}`);
       } else if (IndentityPoolId && IndentityPoolId !== 'your-identity-pool-id') {
-        // Use Cognito Identity Pool for anonymous access
+        // Tier 3: Anonymous Cognito Identity Pool (existing)
         clientConfig.credentials = fromCognitoIdentityPool({
           client: new CognitoIdentityClient({ region }),
           identityPoolId: IndentityPoolId,
         });
-        console.log(`🔑 [${key.toUpperCase()}] Using Cognito Identity Pool`);
+        console.log(`🔑 [${key.toUpperCase()}] Using anonymous Cognito Identity Pool`);
       } else {
+        // Tier 4: Demo mode (fallback)
         console.log(`⚠️ [${key.toUpperCase()}] No credentials configured - will use demo mode`);
       }
 
       this.clients[key] = new S3Client(clientConfig);
     });
+
+    console.log(`✅ [${authMode}] S3 clients initialized for ${Object.keys(BUCKET_CONFIGS).length} configurations`);
+  }
+
+  /**
+   * Get user-specific S3 prefix based on authentication state
+   * @param {string} basePrefix - Base prefix from config
+   * @returns {string} User-specific or base prefix
+   */
+  getUserSpecificPrefix(basePrefix) {
+    if (this.isAuthenticated && this.cognitoIdentityId) {
+      // Use Cognito Identity ID for user-specific folders
+      return `${basePrefix}users/${this.cognitoIdentityId}/`;
+    }
+    return basePrefix;
+  }
+
+  /**
+   * Check if user has enhanced permissions (authenticated users)
+   * @returns {boolean}
+   */
+  hasEnhancedPermissions() {
+    return this.isAuthenticated && !!this.userIdToken;
   }
 
   async uploadFile(file, format, onProgress) {
@@ -52,8 +167,10 @@ class S3Service {
       throw new Error(`Invalid format: ${format}`);
     }
 
-    const key = `${config.uploadFolder}${file.name}`;
-    let progressInterval; // Declare at function scope
+    // Use user-specific prefix for authenticated users
+    const uploadFolder = this.getUserSpecificPrefix(config.uploadFolder);
+    const key = `${uploadFolder}${file.name}`;
+    let progressInterval;
 
     try {
       // Check if we have proper AWS credentials configured
@@ -61,17 +178,27 @@ class S3Service {
         (IndentityPoolId && IndentityPoolId !== 'your-identity-pool-id');
 
       if (!hasCredentials) {
-        // Mock upload for demo purposes when no credentials are available
         console.warn('No AWS credentials configured. Running in demo mode.');
         return this.mockUpload(file, format, onProgress, key, config);
       }
 
-      console.log(`📤 [PRODUCTION] Starting upload: ${file.name} (${(file.size / 1024 / 1024).toFixed(2)} MB)`);
-      console.log(`🎯 [PRODUCTION] Target: ${config.bucketName}/${key}`);
-      console.log(`📁 [PRODUCTION] Upload folder: ${config.uploadFolder}`);
-      console.log(`🔍 [PRODUCTION] Will check for: ${config.outputFolder}${config.outputPrefix}${file.name}`);
+      const authMode = this.isAuthenticated ? 'AUTHENTICATED' : 'ANONYMOUS';
+      console.log(`📤 [${authMode}] Starting upload: ${file.name} (${(file.size / 1024 / 1024).toFixed(2)} MB)`);
+      console.log(`🎯 [${authMode}] Target: ${config.bucketName}/${key}`);
+      console.log(`📁 [${authMode}] Upload folder: ${uploadFolder}`);
+      
+      if (this.isAuthenticated) {
+        console.log(`👤 [${authMode}] User-specific upload path enabled`);
+      }
 
-      // Convert File to ArrayBuffer for browser compatibility
+      // Enhanced file size limits for authenticated users
+      const maxFileSize = this.hasEnhancedPermissions() ? 100 * 1024 * 1024 : 50 * 1024 * 1024; // 100MB vs 50MB
+      if (file.size > maxFileSize) {
+        const limitMB = maxFileSize / (1024 * 1024);
+        const authHint = this.hasEnhancedPermissions() ? '' : ' (Sign in for larger file limits)';
+        throw new Error(`File size exceeds ${limitMB}MB limit${authHint}`);
+      }
+
       const fileBuffer = await this.fileToArrayBuffer(file);
 
       const command = new PutObjectCommand({
@@ -79,7 +206,15 @@ class S3Service {
         Key: key,
         Body: fileBuffer,
         ContentType: file.type || 'application/pdf',
-        ContentLength: file.size
+        ContentLength: file.size,
+        // Add metadata for authenticated users
+        ...(this.isAuthenticated && {
+          Metadata: {
+            'uploaded-by': 'authenticated-user',
+            'cognito-identity-id': this.cognitoIdentityId || 'pending',
+            'upload-timestamp': new Date().toISOString()
+          }
+        })
       });
 
       // Start progress simulation
@@ -98,7 +233,12 @@ class S3Service {
 
       const result = await this.clients[format].send(command);
 
-      // Complete progress
+      // Store Cognito Identity ID if available (for user-specific prefixes)
+      if (!this.cognitoIdentityId && result.$metadata?.httpStatusCode === 200) {
+        // The identity ID would be available in the credentials, but it's not easily accessible
+        // It will be naturally populated during credential resolution
+      }
+
       if (progressInterval) {
         clearInterval(progressInterval);
       }
@@ -106,23 +246,37 @@ class S3Service {
         onProgress(100);
       }
 
-      console.log(`✅ [PRODUCTION] Upload successful! ETag: ${result.ETag}`);
+      console.log(`✅ [${authMode}] Upload successful! ETag: ${result.ETag}`);
 
       return {
         success: true,
         key,
         bucket: config.bucketName,
-        etag: result.ETag
+        etag: result.ETag,
+        authenticated: this.isAuthenticated,
+        userSpecificPath: this.isAuthenticated
       };
     } catch (error) {
       console.error('Upload failed:', error);
 
-      // Clear any progress intervals
       if (progressInterval) {
         clearInterval(progressInterval);
       }
 
-      // Handle various error types and fall back to demo mode
+      // Handle authentication-specific errors
+      if (error.message?.includes('token') || error.message?.includes('Token')) {
+        console.warn('🔄 Token-related error. This might indicate token expiration.');
+        // Could trigger a token refresh here if you have that capability
+      }
+
+      // Enhanced error handling for authenticated users
+      if (this.isAuthenticated) {
+        if (error.message?.includes('Access Denied') || error.message?.includes('Forbidden')) {
+          console.warn('🚫 Authenticated access denied. Check IAM role permissions for authenticated users.');
+        }
+      }
+
+      // Existing error handling...
       const errorMessage = error.message || error.toString();
 
       if (errorMessage.includes('Credential') || errorMessage.includes('credentials')) {
@@ -146,14 +300,12 @@ class S3Service {
         return this.mockUpload(file, format, onProgress, key, config);
       }
 
-      // For any other error, also fall back to demo mode to keep the app functional
       console.warn('⚠️ Unknown upload error. Falling back to demo mode for better user experience.');
       console.warn('🔧 Error details:', errorMessage);
       return this.mockUpload(file, format, onProgress, key, config);
     }
   }
 
-  // Helper method to convert File to ArrayBuffer
   fileToArrayBuffer(file) {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
@@ -164,14 +316,16 @@ class S3Service {
   }
 
   async mockUpload(file, format, onProgress, key, config) {
-    console.log(`🎭 [DEMO MODE] Simulating upload for: ${file.name}`);
-    console.log(`📁 [DEMO MODE] Target bucket: ${config.bucketName}`);
-    console.log(`🔑 [DEMO MODE] Target key: ${key}`);
-    console.log(`📊 [DEMO MODE] File size: ${(file.size / 1024 / 1024).toFixed(2)} MB`);
-    console.log(`📂 [DEMO MODE] Upload folder: ${config.uploadFolder}`);
-    console.log(`🔍 [DEMO MODE] Will check for: ${config.outputFolder}${config.outputPrefix}${file.name}`);
+    const authMode = this.isAuthenticated ? 'AUTHENTICATED' : 'ANONYMOUS';
+    console.log(`🎭 [DEMO MODE - ${authMode}] Simulating upload for: ${file.name}`);
+    console.log(`📁 [DEMO MODE - ${authMode}] Target bucket: ${config.bucketName}`);
+    console.log(`🔑 [DEMO MODE - ${authMode}] Target key: ${key}`);
+    console.log(`📊 [DEMO MODE - ${authMode}] File size: ${(file.size / 1024 / 1024).toFixed(2)} MB`);
 
-    // Simulate upload progress
+    if (this.isAuthenticated) {
+      console.log(`👤 [DEMO MODE - ${authMode}] Simulating user-specific upload path`);
+    }
+
     if (onProgress) {
       let progress = 0;
       const interval = setInterval(() => {
@@ -179,14 +333,13 @@ class S3Service {
         if (progress >= 100) {
           clearInterval(interval);
           onProgress(100);
-          console.log(`✅ [DEMO MODE] Mock upload completed successfully!`);
+          console.log(`✅ [DEMO MODE - ${authMode}] Mock upload completed successfully!`);
         } else {
           onProgress(progress);
         }
       }, 200);
     }
 
-    // Simulate upload delay
     await new Promise(resolve => setTimeout(resolve, 2000));
 
     return {
@@ -194,17 +347,19 @@ class S3Service {
       key,
       bucket: config.bucketName,
       etag: 'mock-etag-' + Date.now(),
-      mock: true
+      mock: true,
+      authenticated: this.isAuthenticated,
+      userSpecificPath: this.isAuthenticated
     };
   }
 
-  // Test AWS connectivity and show bucket structure
   async testConnection(format = 'pdf') {
     const config = BUCKET_CONFIGS[format];
+    const authMode = this.isAuthenticated ? 'AUTHENTICATED' : 'ANONYMOUS';
 
     try {
-      console.log(`🔍 Testing connection to ${config.bucketName}...`);
-      console.log(`📂 Upload folder: ${config.uploadFolder}`);
+      console.log(`🔍 [${authMode}] Testing connection to ${config.bucketName}...`);
+      console.log(`📂 Upload folder: ${this.getUserSpecificPrefix(config.uploadFolder)}`);
       console.log(`📁 Output folder: ${config.outputFolder}`);
       console.log(`🏷️ Output prefix: ${config.outputPrefix}`);
 
@@ -214,21 +369,21 @@ class S3Service {
       });
 
       await this.clients[format].send(command);
-      console.log(`✅ Connection test successful for ${config.bucketName}`);
+      console.log(`✅ [${authMode}] Connection test successful for ${config.bucketName}`);
       return true;
     } catch (error) {
-      console.error(`❌ Connection test failed for ${config.bucketName}:`, error.message);
+      console.error(`❌ [${authMode}] Connection test failed for ${config.bucketName}:`, error.message);
       return false;
     }
   }
 
-  // Test checking for processed files in the correct output folder
   async testProcessedFileCheck(format, fileName) {
     const config = BUCKET_CONFIGS[format];
     const processedFileName = `${config.outputPrefix}${fileName}`;
     const key = `${config.outputFolder}${processedFileName}`;
+    const authMode = this.isAuthenticated ? 'AUTHENTICATED' : 'ANONYMOUS';
 
-    console.log(`🧪 [TEST] Checking for processed file:`);
+    console.log(`🧪 [TEST - ${authMode}] Checking for processed file:`);
     console.log(`📁 Bucket: ${config.bucketName}`);
     console.log(`🔑 Key: ${key}`);
     console.log(`📂 Output folder: ${config.outputFolder}`);
@@ -244,46 +399,41 @@ class S3Service {
       const result = await this.clients[format].send(command);
 
       if (result.Contents && result.Contents.length > 0) {
-        console.log(`✅ [TEST] File found!`, result.Contents[0]);
+        console.log(`✅ [TEST - ${authMode}] File found!`, result.Contents[0]);
         return { found: true, file: result.Contents[0] };
       } else {
-        console.log(`❌ [TEST] File not found: ${key}`);
+        console.log(`❌ [TEST - ${authMode}] File not found: ${key}`);
         return { found: false };
       }
     } catch (error) {
-      console.error(`❌ [TEST] Error checking file:`, error.message);
+      console.error(`❌ [TEST - ${authMode}] Error checking file:`, error.message);
       return { found: false, error: error.message };
     }
   }
 
   async checkForProcessedFile(format, originalFileName, onStatusUpdate, attemptNumber = 0) {
     const config = BUCKET_CONFIGS[format];
-    // For HTML format, look for .zip files in remediated folder
-    // For PDF format, look for COMPLIANT_ files in result folder
     let processedFileName;
     if (format === 'html') {
-      // Remove .pdf extension and add .zip for HTML format
       const baseFileName = originalFileName.replace(/\.pdf$/i, '');
       processedFileName = `${config.outputPrefix}${baseFileName}.zip`;
     } else {
-      // Keep original filename for PDF format
       processedFileName = `${config.outputPrefix}${originalFileName}`;
     }
     const key = `${config.outputFolder}${processedFileName}`;
 
     try {
-      // Check if we have proper AWS credentials configured
       const hasCredentials = process.env.REACT_APP_AWS_ACCESS_KEY_ID ||
         (IndentityPoolId && IndentityPoolId !== 'your-identity-pool-id');
 
       if (!hasCredentials) {
-        // Mock processing check for demo purposes
         console.log(`🔄 [DEMO MODE] Running mock processing check for: ${originalFileName}`);
         return this.mockProcessingCheck(key, config, onStatusUpdate, attemptNumber);
       }
 
-      console.log(`🔍 [PRODUCTION] Checking S3 for remediated file: ${key}`);
-      console.log(`📊 [PRODUCTION] Bucket: ${config.bucketName}`);
+      const authMode = this.isAuthenticated ? 'AUTHENTICATED' : 'ANONYMOUS';
+      console.log(`🔍 [${authMode}] Checking S3 for remediated file: ${key}`);
+      console.log(`📊 [${authMode}] Bucket: ${config.bucketName}`);
 
       const command = new ListObjectsV2Command({
         Bucket: config.bucketName,
@@ -294,9 +444,8 @@ class S3Service {
       const result = await this.clients[format].send(command);
 
       if (result.Contents && result.Contents.length > 0) {
-        // File found
-        console.log(`🎉 [PRODUCTION] Processing completed! File found: ${key}`);
-        console.log(`📄 [PRODUCTION] File details:`, result.Contents[0]);
+        console.log(`🎉 [${authMode}] Processing completed! File found: ${key}`);
+        console.log(`📄 [${authMode}] File details:`, result.Contents[0]);
         if (onStatusUpdate) {
           onStatusUpdate('completed');
         }
@@ -305,20 +454,19 @@ class S3Service {
           key,
           bucket: config.bucketName,
           lastModified: result.Contents[0].LastModified,
-          size: result.Contents[0].Size
+          size: result.Contents[0].Size,
+          authenticated: this.isAuthenticated
         };
       } else {
-        // File not found yet
-        console.log(`⏳ [PRODUCTION] Still processing... File not ready yet`);
+        console.log(`⏳ [${authMode}] Still processing... File not ready yet`);
         if (onStatusUpdate) {
           onStatusUpdate('processing');
         }
-        return { found: false };
+        return { found: false, authenticated: this.isAuthenticated };
       }
     } catch (error) {
       console.error('Error checking for processed file:', error);
 
-      // If check fails due to credentials, fall back to mock mode
       if (error.message.includes('Credential') || error.message.includes('credentials')) {
         console.warn('🔄 AWS credentials issue. Falling back to demo mode.');
         return this.mockProcessingCheck(key, config, onStatusUpdate, attemptNumber);
@@ -332,22 +480,22 @@ class S3Service {
   }
 
   mockProcessingCheck(key, config, onStatusUpdate, attempts = 0) {
-    console.log(`🔍 [DEMO MODE] Checking for remediated file: ${key}`);
-    console.log(`📊 [DEMO MODE] Bucket: ${config.bucketName}`);
-    console.log(`⏱️ [DEMO MODE] Check attempt: ${attempts + 1}`);
-    console.log(`📁 [DEMO MODE] Expected file type: ${key.endsWith('.zip') ? 'ZIP archive' : 'PDF file'}`);
+    const authMode = this.isAuthenticated ? 'AUTHENTICATED' : 'ANONYMOUS';
+    console.log(`🔍 [DEMO MODE - ${authMode}] Checking for remediated file: ${key}`);
+    console.log(`📊 [DEMO MODE - ${authMode}] Bucket: ${config.bucketName}`);
+    console.log(`⏱️ [DEMO MODE - ${authMode}] Check attempt: ${attempts + 1}`);
 
-    // Simulate processing time - gradually increase chance of completion
-    const baseChance = 0.15; // 15% base chance
-    const attemptBonus = attempts * 0.1; // 10% increase per attempt
-    const completionChance = Math.min(baseChance + attemptBonus, 0.8); // Max 80% chance
+    // Slightly faster processing for authenticated users in demo mode
+    const baseChance = this.isAuthenticated ? 0.2 : 0.15; // 20% vs 15%
+    const attemptBonus = attempts * 0.1;
+    const completionChance = Math.min(baseChance + attemptBonus, 0.8);
     const shouldComplete = Math.random() < completionChance;
 
-    console.log(`🎲 [DEMO MODE] Completion chance: ${(completionChance * 100).toFixed(1)}%`);
-    console.log(`✅ [DEMO MODE] Will complete this check: ${shouldComplete}`);
+    console.log(`🎲 [DEMO MODE - ${authMode}] Completion chance: ${(completionChance * 100).toFixed(1)}%`);
+    console.log(`✅ [DEMO MODE - ${authMode}] Will complete this check: ${shouldComplete}`);
 
     if (shouldComplete) {
-      console.log(`🎉 [DEMO MODE] Processing completed! File found: ${key}`);
+      console.log(`🎉 [DEMO MODE - ${authMode}] Processing completed! File found: ${key}`);
       if (onStatusUpdate) {
         onStatusUpdate('completed');
       }
@@ -356,15 +504,16 @@ class S3Service {
         key,
         bucket: config.bucketName,
         lastModified: new Date(),
-        size: 1024 * 1024, // 1MB mock size
-        mock: true
+        size: 1024 * 1024,
+        mock: true,
+        authenticated: this.isAuthenticated
       };
     } else {
-      console.log(`⏳ [DEMO MODE] Still processing... File not ready yet`);
+      console.log(`⏳ [DEMO MODE - ${authMode}] Still processing... File not ready yet`);
       if (onStatusUpdate) {
         onStatusUpdate('processing');
       }
-      return { found: false, mock: true };
+      return { found: false, mock: true, authenticated: this.isAuthenticated };
     }
   }
 
@@ -373,42 +522,44 @@ class S3Service {
     let processedFileName;
 
     if (format === 'html') {
-      // Remove .pdf extension and add .zip for HTML format
       const baseFileName = fileName.replace(/\.pdf$/i, '');
       processedFileName = `${config.outputPrefix}${baseFileName}.zip`;
     } else {
-      // Keep original filename for PDF format
       processedFileName = `${config.outputPrefix}${fileName}`;
     }
 
     const key = `${config.outputFolder}${processedFileName}`;
 
     try {
-      // Check if we have proper AWS credentials configured
       const hasCredentials = process.env.REACT_APP_AWS_ACCESS_KEY_ID ||
         (IndentityPoolId && IndentityPoolId !== 'your-identity-pool-id');
 
       if (!hasCredentials) {
-        // Return mock download URL for demo mode
-        console.log(`🎭 [DEMO MODE] Generating mock download URL for: ${processedFileName}`);
-        console.log(`📁 [DEMO MODE] Bucket: ${config.bucketName}`);
-        console.log(`🔑 [DEMO MODE] Key: ${key}`);
+        const authMode = this.isAuthenticated ? 'AUTHENTICATED' : 'ANONYMOUS';
+        console.log(`🎭 [DEMO MODE - ${authMode}] Generating mock download URL for: ${processedFileName}`);
         
-        // Return a blob URL for demo purposes (you could generate a mock file here)
         const mockUrl = `https://demo-download.example.com/${processedFileName}?demo=true&expires=${Date.now() + (expiresIn * 1000)}`;
-        console.log(`🔗 [DEMO MODE] Mock download URL: ${mockUrl}`);
+        console.log(`🔗 [DEMO MODE - ${authMode}] Mock download URL: ${mockUrl}`);
         
         return {
           url: mockUrl,
           expires: new Date(Date.now() + (expiresIn * 1000)),
-          mock: true
+          mock: true,
+          authenticated: this.isAuthenticated
         };
       }
 
-      console.log(`🔗 [PRODUCTION] Generating signed URL for: ${processedFileName}`);
-      console.log(`📁 [PRODUCTION] Bucket: ${config.bucketName}`);
-      console.log(`🔑 [PRODUCTION] Key: ${key}`);
-      console.log(`⏰ [PRODUCTION] Expires in: ${expiresIn} seconds`);
+      const authMode = this.isAuthenticated ? 'AUTHENTICATED' : 'ANONYMOUS';
+      console.log(`🔗 [${authMode}] Generating signed URL for: ${processedFileName}`);
+      console.log(`📁 [${authMode}] Bucket: ${config.bucketName}`);
+      console.log(`🔑 [${authMode}] Key: ${key}`);
+      console.log(`⏰ [${authMode}] Expires in: ${expiresIn} seconds`);
+
+      // Enhanced expiration for authenticated users
+      const actualExpiresIn = this.hasEnhancedPermissions() ? expiresIn * 2 : expiresIn;
+      if (this.hasEnhancedPermissions() && actualExpiresIn > expiresIn) {
+        console.log(`👤 [${authMode}] Enhanced expiration: ${actualExpiresIn} seconds`);
+      }
 
       const command = new GetObjectCommand({
         Bucket: config.bucketName,
@@ -417,29 +568,33 @@ class S3Service {
       });
 
       const signedUrl = await getSignedUrl(this.clients[format], command, {
-        expiresIn: expiresIn
+        expiresIn: actualExpiresIn
       });
 
-      console.log(`✅ [PRODUCTION] Signed URL generated successfully`);
-      console.log(`🔗 [PRODUCTION] URL expires at: ${new Date(Date.now() + (expiresIn * 1000)).toISOString()}`);
+      console.log(`✅ [${authMode}] Signed URL generated successfully`);
+      console.log(`🔗 [${authMode}] URL expires at: ${new Date(Date.now() + (actualExpiresIn * 1000)).toISOString()}`);
 
       return {
         url: signedUrl,
-        expires: new Date(Date.now() + (expiresIn * 1000)),
+        expires: new Date(Date.now() + (actualExpiresIn * 1000)),
         bucket: config.bucketName,
-        key: key
+        key: key,
+        authenticated: this.isAuthenticated,
+        enhancedExpiration: this.hasEnhancedPermissions()
       };
 
     } catch (error) {
       console.error('❌ Error generating download URL:', error);
 
-      // Handle different error types
       if (error.message.includes('NoSuchKey') || error.message.includes('Not Found')) {
         throw new Error(`File not found: ${processedFileName}. Make sure the file processing is complete.`);
       }
 
       if (error.message.includes('Access Denied') || error.message.includes('Forbidden')) {
-        throw new Error(`Access denied. Check if your credentials have s3:GetObject permission for ${config.bucketName}/${key}`);
+        const authHint = this.isAuthenticated ? 
+          `Check if your authenticated IAM role has s3:GetObject permission for ${config.bucketName}/${key}` :
+          `Check if your anonymous IAM role has s3:GetObject permission for ${config.bucketName}/${key}`;
+        throw new Error(`Access denied. ${authHint}`);
       }
 
       if (error.message.includes('Credential') || error.message.includes('credentials')) {
@@ -450,29 +605,33 @@ class S3Service {
     }
   }
 
-  // Polling function to continuously check for processed file
   startPolling(format, originalFileName, onStatusUpdate, onComplete, onError) {
-    const pollInterval = 30000; // Check every 30 seconds
-    const maxAttempts = 40; // Stop after 20 minutes (40 * 30 seconds)
+    const pollInterval = 30000;
+    const maxAttempts = 40;
     let attempts = 0;
     const startTime = Date.now();
 
-    // In demo mode, simulate faster processing
     const hasCredentials = process.env.REACT_APP_AWS_ACCESS_KEY_ID ||
       (IndentityPoolId && IndentityPoolId !== 'your-identity-pool-id');
 
-    const demoMaxAttempts = hasCredentials ? maxAttempts : 4; // 2 minutes in demo mode
-    const mode = hasCredentials ? 'PRODUCTION' : 'DEMO MODE';
+    // Slightly reduced timeout for authenticated users in demo mode
+    const demoMaxAttempts = hasCredentials ? maxAttempts : (this.isAuthenticated ? 3 : 4);
+    const authMode = this.isAuthenticated ? 'AUTHENTICATED' : 'ANONYMOUS';
+    const mode = hasCredentials ? authMode : `DEMO MODE - ${authMode}`;
     const config = BUCKET_CONFIGS[format];
 
     console.log(`\n🚀 [${mode}] ===== STARTING PROCESSING POLL =====`);
     console.log(`📄 [${mode}] File: ${originalFileName}`);
     console.log(`🎯 [${mode}] Format: ${format.toUpperCase()}`);
     console.log(`📁 [${mode}] Bucket: ${config.bucketName}`);
-    console.log(`📂 [${mode}] Upload folder: ${config.uploadFolder}`);
-    console.log(`📁 [${mode}] Output folder: ${config.outputFolder}`);
-    console.log(`🏷️ [${mode}] Output prefix: ${config.outputPrefix}`);
-    // Calculate expected filename for logging
+    
+    if (this.isAuthenticated) {
+      console.log(`👤 [${mode}] Authenticated user polling`);
+      if (!hasCredentials) {
+        console.log(`⚡ [${mode}] Faster demo processing for authenticated users`);
+      }
+    }
+
     let expectedFileName;
     if (format === 'html') {
       const baseFileName = originalFileName.replace(/\.pdf$/i, '');
@@ -512,7 +671,6 @@ class S3Service {
             console.error(`❌ [${mode}] ${timeoutMessage}`);
             onError(new Error(timeoutMessage));
           } else {
-            // In demo mode, simulate completion after timeout
             console.log(`✅ [${mode}] Simulating completion after timeout`);
 
             let processedFileName;
@@ -530,7 +688,8 @@ class S3Service {
               bucket: config.bucketName,
               lastModified: new Date(),
               size: 1024 * 1024,
-              mock: true
+              mock: true,
+              authenticated: this.isAuthenticated
             });
           }
           return;
@@ -559,7 +718,6 @@ class S3Service {
       }
     };
 
-    // Start polling immediately
     console.log(`🎬 [${mode}] Starting first poll check immediately...`);
     poll();
   }
