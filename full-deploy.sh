@@ -61,49 +61,62 @@ echo "  1. PDF-to-PDF bucket: For original PDF storage and processing"
 echo "  2. PDF-to-HTML bucket: For converted HTML output storage"
 echo ""
 
-# Prompt for PDF-to-PDF bucket ARN
+# Prompt for PDF-to-PDF bucket name
 if [ -z "$PDF_TO_PDF_BUCKET_ARN" ]; then
-    echo "Enter the ARN for your PDF-to-PDF processing bucket:"
-    echo "  Example: arn:aws:s3:::my-pdf-processing-bucket"
+    echo "Enter the name for your PDF-to-PDF processing bucket:"
+    echo "  Example: my-pdf-processing-bucket"
     echo "  (Leave empty to auto-generate based on project name)"
-    read -p "PDF-to-PDF Bucket ARN: " PDF_TO_PDF_BUCKET_ARN
+    read -p "PDF-to-PDF Bucket Name: " PDF_TO_PDF_BUCKET_ARN
     
     if [ -z "$PDF_TO_PDF_BUCKET_ARN" ]; then
-        PDF_TO_PDF_BUCKET_NAME="${PROJECT_NAME}-pdf-to-pdf-$(date +%s)"
-        PDF_TO_PDF_BUCKET_ARN="arn:aws:s3:::${PDF_TO_PDF_BUCKET_NAME}"
+        PDF_TO_PDF_BUCKET_ARN="${PROJECT_NAME}-pdf-to-pdf-$(date +%s)"
         echo "  Auto-generated: $PDF_TO_PDF_BUCKET_ARN"
     fi
 fi
 
-# Prompt for PDF-to-HTML bucket ARN
+# Prompt for PDF-to-HTML bucket name
 if [ -z "$PDF_TO_HTML_BUCKET_ARN" ]; then
     echo ""
-    echo "Enter the ARN for your PDF-to-HTML output bucket:"
-    echo "  Example: arn:aws:s3:::my-pdf-html-output-bucket"
+    echo "Enter the name for your PDF-to-HTML output bucket:"
+    echo "  Example: my-pdf-html-output-bucket"
     echo "  (Leave empty to auto-generate based on project name)"
-    read -p "PDF-to-HTML Bucket ARN: " PDF_TO_HTML_BUCKET_ARN
+    read -p "PDF-to-HTML Bucket Name: " PDF_TO_HTML_BUCKET_ARN
     
     if [ -z "$PDF_TO_HTML_BUCKET_ARN" ]; then
-        PDF_TO_HTML_BUCKET_NAME="${PROJECT_NAME}-pdf-to-html-$(date +%s)"
-        PDF_TO_HTML_BUCKET_ARN="arn:aws:s3:::${PDF_TO_HTML_BUCKET_NAME}"
+        PDF_TO_HTML_BUCKET_ARN="${PROJECT_NAME}-pdf-to-html-$(date +%s)"
         echo "  Auto-generated: $PDF_TO_HTML_BUCKET_ARN"
     fi
 fi
 
-# Validate bucket ARN format
-validate_bucket_arn() {
-    local arn=$1
+# Validate bucket name format (S3 naming rules)
+validate_bucket_name() {
+    local name=$1
     local bucket_type=$2
     
-    if [[ ! $arn =~ ^arn:aws:s3:::[a-z0-9.-]+$ ]]; then
-        echo "❌ Invalid S3 bucket ARN format for $bucket_type: $arn"
-        echo "   Expected format: arn:aws:s3:::bucket-name"
+    # Check length (3-63 characters)
+    if [ ${#name} -lt 3 ] || [ ${#name} -gt 63 ]; then
+        echo "❌ Invalid S3 bucket name length for $bucket_type: $name"
+        echo "   Bucket names must be 3-63 characters long"
+        exit 1
+    fi
+    
+    # Check format (lowercase letters, numbers, hyphens, periods)
+    if [[ ! $name =~ ^[a-z0-9.-]+$ ]]; then
+        echo "❌ Invalid S3 bucket name format for $bucket_type: $name"
+        echo "   Bucket names can only contain lowercase letters, numbers, hyphens, and periods"
+        exit 1
+    fi
+    
+    # Check that it doesn't start/end with hyphen or period
+    if [[ $name =~ ^[-.]|[-.]$ ]]; then
+        echo "❌ Invalid S3 bucket name for $bucket_type: $name"
+        echo "   Bucket names cannot start or end with hyphens or periods"
         exit 1
     fi
 }
 
-validate_bucket_arn "$PDF_TO_PDF_BUCKET_ARN" "PDF-to-PDF"
-validate_bucket_arn "$PDF_TO_HTML_BUCKET_ARN" "PDF-to-HTML"
+validate_bucket_name "$PDF_TO_PDF_BUCKET_ARN" "PDF-to-PDF"
+validate_bucket_name "$PDF_TO_HTML_BUCKET_ARN" "PDF-to-HTML"
 
 echo ""
 echo "✅ S3 Bucket Configuration:"
