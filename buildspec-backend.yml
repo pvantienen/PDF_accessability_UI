@@ -42,32 +42,12 @@ phases:
           exit 1
         fi
       # Create .env file for backend deployment
-      - echo "# =============================================" > .env
-      - echo "# BACKEND STACK DEPLOYMENT CONFIGURATION" >> .env
-      - echo "# =============================================" >> .env
-      - echo "# This .env file is for deploying ONLY the backend stack" >> .env
-      - echo "# Usage: cdk deploy --context deploy=backend" >> .env
-      - echo "# =============================================" >> .env
-      - echo "# REQUIRED: AWS Account Configuration" >> .env
-      - echo "# =============================================" >> .env
-      - echo "AWS_ACCOUNT=$AWS_ACCOUNT" >> .env
+      - echo "AWS_ACCOUNT=$AWS_ACCOUNT" > .env
       - echo "AWS_REGION=$AWS_REGION" >> .env
-      - echo "# =============================================" >> .env
-      - echo "# REQUIRED: Amplify Integration" >> .env
-      - echo "# =============================================" >> .env
-      - echo "# These values must be obtained from your deployed Amplify app" >> .env
       - echo "AMPLIFY_URL=$AMPLIFY_URL" >> .env
       - echo "AMPLIFY_APP_ID=$AMPLIFY_APP_ID" >> .env
-      - echo "# =============================================" >> .env
-      - echo "# REQUIRED: S3 Bucket Configuration" >> .env
-      - echo "# =============================================" >> .env
-      - echo "# ARNs of the S3 buckets used by your backend processing" >> .env
       - echo "PDF_TO_PDF_BUCKET_ARN=$PDF_TO_PDF_BUCKET_ARN" >> .env
       - echo "PDF_TO_HTML_BUCKET_ARN=$PDF_TO_HTML_BUCKET_ARN" >> .env
-      - echo "# =============================================" >> .env
-      - echo "# DEPLOYMENT COMMANDS" >> .env
-      - echo "# =============================================" >> .env
-      - echo "# Development: cdk deploy --context deploy=backend" >> .env
       - echo "📋 Environment configuration:"
       - echo "Account:$AWS_ACCOUNT, Region:$AWS_REGION, Project:$PROJECT_NAME"
       - echo "Amplify URL: $AMPLIFY_URL"
