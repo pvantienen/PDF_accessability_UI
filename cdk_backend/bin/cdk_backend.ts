@@ -29,6 +29,7 @@ const env = {
 const baseRequiredVars = {
   AWS_ACCOUNT: process.env.AWS_ACCOUNT,
   AWS_REGION: process.env.AWS_REGION,
+  PROJECT_NAME: process.env.PROJECT_NAME,
 };
 
 // Stack-specific required environment variables
@@ -66,6 +67,7 @@ function validateEnvVars(requiredVars: Record<string, string | undefined>, stack
     console.error("\n🔧 Base requirements:");
     console.error(" - AWS_ACCOUNT: Your AWS account ID");
     console.error(" - AWS_REGION: Your AWS region (e.g., us-west-2)");
+    console.error(" - PROJECT_NAME: Your project name for stack naming");
     
     return false;
   }
@@ -88,7 +90,7 @@ if (deployTarget === 'amplify' || deployTarget === 'both') {
     process.exit(1);
   }
 
-  const amplify = new AmplifyHostingStack(app, 'AmplifyHostingStack', {
+  const amplify = new AmplifyHostingStack(app, `${process.env.PROJECT_NAME}-AmplifyHostingStack`, {
     env,
     description: 'PDF Accessibility V1 FRONTEND APP - Manual Deployment',
     // Add amplify-specific props here if needed
@@ -97,7 +99,7 @@ if (deployTarget === 'amplify' || deployTarget === 'both') {
   // Add tags for better resource management
   cdk.Tags.of(amplify).add('StackType', 'Frontend');
 
-  console.log(`📦 Amplify stack configured: AmplifyHostingStack`);
+  console.log(`📦 Amplify stack configured: ${process.env.PROJECT_NAME}-AmplifyHostingStack`);
 }
 
 // Deploy Backend stack
@@ -120,7 +122,7 @@ if (deployTarget === 'backend' || deployTarget === 'both') {
   // Add tags for better resource management
   cdk.Tags.of(backend).add('StackType', 'Backend');
 
-  console.log(`📦 Backend stack configured: CdkBackendStack`);
+  console.log(`📦 Backend stack configured: ${process.env.PROJECT_NAME}-CdkBackendStack`);
   console.log(`🔗 Using Amplify URL: ${process.env.AMPLIFY_URL}`);
 }
 
