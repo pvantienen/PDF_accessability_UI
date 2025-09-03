@@ -115,7 +115,7 @@ if (deployTarget === 'backend' || deployTarget === 'both') {
     pdfToHtmlBucketArn: process.env.PDF_TO_HTML_BUCKET_ARN!,
   };
 
-  const backend = new CdkBackendStack(app, 'CdkBackendStack', backendProps);
+  const backend = new CdkBackendStack(app, `${process.env.PROJECT_NAME}-CdkBackendStack`, backendProps);
   
   // Add tags for better resource management
   cdk.Tags.of(backend).add('StackType', 'Backend');
