@@ -109,6 +109,7 @@ echo "Creating Amplify CodeBuild project..."
 if aws codebuild create-project \
     --name "$AMPLIFY_PROJECT_NAME" \
     --source '{"type": "GITHUB", "location": "'"$GITHUB_URL"'", "buildspec": "buildspec-amplify.yml"}' \
+    --source-version "$TARGET_BRANCH" \
     --artifacts '{"type": "NO_ARTIFACTS"}' \
     --environment '{
         "type": "LINUX_CONTAINER",
@@ -203,6 +204,7 @@ echo "Creating Backend CodeBuild project..."
 if aws codebuild create-project \
     --name "$BACKEND_PROJECT_NAME" \
     --source '{"type": "GITHUB", "location": "'"$GITHUB_URL"'", "buildspec": "buildspec-backend.yml", "sourceVersion": "'$TARGET_BRANCH'"}' \
+    --source-version "$TARGET_BRANCH" \
     --artifacts '{"type": "NO_ARTIFACTS"}' \
     --environment '{
         "type": "LINUX_CONTAINER",
