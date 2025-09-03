@@ -51,6 +51,70 @@ if [ -z "$PROJECT_NAME" ]; then
     PROJECT_NAME=${PROJECT_NAME:-pdf-accessibility}
 fi
 
+
+# ------------------------- S3 Bucket Configuration -------------------------
+
+echo ""
+echo "📦 S3 Bucket Configuration"
+echo "The application requires two S3 buckets for PDF processing:"
+echo "  1. PDF-to-PDF bucket: For original PDF storage and processing"
+echo "  2. PDF-to-HTML bucket: For converted HTML output storage"
+echo ""
+
+# Prompt for PDF-to-PDF bucket ARN
+if [ -z "$PDF_TO_PDF_BUCKET_ARN" ]; then
+    echo "Enter the ARN for your PDF-to-PDF processing bucket:"
+    echo "  Example: arn:aws:s3:::my-pdf-processing-bucket"
+    echo "  (Leave empty to auto-generate based on project name)"
+    read -p "PDF-to-PDF Bucket ARN: " PDF_TO_PDF_BUCKET_ARN
+    
+    if [ -z "$PDF_TO_PDF_BUCKET_ARN" ]; then
+        PDF_TO_PDF_BUCKET_NAME="${PROJECT_NAME}-pdf-to-pdf-$(date +%s)"
+        PDF_TO_PDF_BUCKET_ARN="arn:aws:s3:::${PDF_TO_PDF_BUCKET_NAME}"
+        echo "  Auto-generated: $PDF_TO_PDF_BUCKET_ARN"
+    fi
+fi
+
+# Prompt for PDF-to-HTML bucket ARN
+if [ -z "$PDF_TO_HTML_BUCKET_ARN" ]; then
+    echo ""
+    echo "Enter the ARN for your PDF-to-HTML output bucket:"
+    echo "  Example: arn:aws:s3:::my-pdf-html-output-bucket"
+    echo "  (Leave empty to auto-generate based on project name)"
+    read -p "PDF-to-HTML Bucket ARN: " PDF_TO_HTML_BUCKET_ARN
+    
+    if [ -z "$PDF_TO_HTML_BUCKET_ARN" ]; then
+        PDF_TO_HTML_BUCKET_NAME="${PROJECT_NAME}-pdf-to-html-$(date +%s)"
+        PDF_TO_HTML_BUCKET_ARN="arn:aws:s3:::${PDF_TO_HTML_BUCKET_NAME}"
+        echo "  Auto-generated: $PDF_TO_HTML_BUCKET_ARN"
+    fi
+fi
+
+# Validate bucket ARN format
+validate_bucket_arn() {
+    local arn=$1
+    local bucket_type=$2
+    
+    if [[ ! $arn =~ ^arn:aws:s3:::[a-z0-9.-]+$ ]]; then
+        echo "❌ Invalid S3 bucket ARN format for $bucket_type: $arn"
+        echo "   Expected format: arn:aws:s3:::bucket-name"
+        exit 1
+    fi
+}
+
+validate_bucket_arn "$PDF_TO_PDF_BUCKET_ARN" "PDF-to-PDF"
+validate_bucket_arn "$PDF_TO_HTML_BUCKET_ARN" "PDF-to-HTML"
+
+echo ""
+echo "✅ S3 Bucket Configuration:"
+echo "  PDF-to-PDF Bucket: $PDF_TO_PDF_BUCKET_ARN"
+echo "  PDF-to-HTML Bucket: $PDF_TO_HTML_BUCKET_ARN"
+echo ""
+
+# Export for use in environment variables
+export PDF_TO_PDF_BUCKET_ARN
+export PDF_TO_HTML_BUCKET_ARN
+
 AWS_ACCOUNT=$(aws sts get-caller-identity --query Account --output text)
 AWS_REGION=$(aws configure get region)
 AWS_REGION=${AWS_REGION:-us-east-1}
