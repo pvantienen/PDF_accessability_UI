@@ -280,7 +280,7 @@ echo "Creating Backend CodeBuild project..."
 
 if aws codebuild create-project \
     --name "$BACKEND_PROJECT_NAME" \
-    --source '{"type": "GITHUB", "location": "'"$GITHUB_URL"'", "buildspec": "buildspec-backend.yml""}' \
+    --source '{"type": "GITHUB", "location": "'"$GITHUB_URL"'", "buildspec": "buildspec-backend.yml"}' \
     --source-version "$TARGET_BRANCH" \
     --artifacts '{"type": "NO_ARTIFACTS"}' \
     --environment '{
