@@ -16,6 +16,36 @@ if [ -z "$GITHUB_URL" ]; then
 fi
 echo "📡 Detected GitHub URL: $GITHUB_URL"
 
+# Auto-detect current branch
+CURRENT_BRANCH=$(git branch --show-current 2>/dev/null)
+if [ -z "$CURRENT_BRANCH" ]; then
+    # Fallback method for older git versions
+    CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD 2>/dev/null)
+fi
+
+# Set target branch (with fallback)
+if [ -z "$TARGET_BRANCH" ]; then
+    if [ -z "$CURRENT_BRANCH" ]; then
+        TARGET_BRANCH="pdf2html"  # Default fallback
+        echo "⚠️ Could not detect current branch. Using default: $TARGET_BRANCH"
+    else
+        TARGET_BRANCH="$CURRENT_BRANCH"
+        echo "📍 Using current branch: $TARGET_BRANCH"
+    fi
+else
+    echo "📍 Using specified branch: $TARGET_BRANCH"
+fi
+
+# Validate branch exists on remote
+if ! git ls-remote --heads origin "$TARGET_BRANCH" | grep -q "$TARGET_BRANCH"; then
+    echo "❌ Branch '$TARGET_BRANCH' not found on remote origin"
+    echo "Available branches:"
+    git ls-remote --heads origin | sed 's/.*refs\/heads\//  - /'
+    exit 1
+fi
+
+echo "✅ Target branch validated: $TARGET_BRANCH"
+
 if [ -z "$PROJECT_NAME" ]; then
     read -p "Enter project name [pdf-accessibility]: " PROJECT_NAME
     PROJECT_NAME=${PROJECT_NAME:-pdf-accessibility}
@@ -32,6 +62,7 @@ BACKEND_PROJECT_NAME="${PROJECT_NAME}-backend"
 echo "📋 Configuration:"
 echo "  Project: $PROJECT_NAME"
 echo "  GitHub: $GITHUB_URL"  
+echo "  Target Branch: $TARGET_BRANCH"
 echo "  Account: $AWS_ACCOUNT"
 echo "  Region: $AWS_REGION"
 echo "  Amplify CodeBuild: $AMPLIFY_PROJECT_NAME"
@@ -86,7 +117,8 @@ if aws codebuild create-project \
         "environmentVariables": [
             {"name": "AWS_ACCOUNT", "value": "'$AWS_ACCOUNT'"},
             {"name": "AWS_REGION", "value": "'$AWS_REGION'"},
-            {"name": "PROJECT_NAME", "value": "'$PROJECT_NAME'"}
+            {"name": "PROJECT_NAME", "value": "'$PROJECT_NAME'"},
+            {"name": "TARGET_BRANCH", "value": "'$TARGET_BRANCH'"}
         ]
     }' \
     --service-role "$ROLE_ARN" >/dev/null 2>&1; then
@@ -156,8 +188,8 @@ if [ "$AMPLIFY_APP_ID" = "None" ] || [ -z "$AMPLIFY_APP_ID" ]; then
     exit 1
 fi
 
-# Construct Amplify URL
-AMPLIFY_URL="https://main.$AMPLIFY_APP_ID.amplifyapp.com"
+# Construct Amplify URL using the target branch
+AMPLIFY_URL="https://$TARGET_BRANCH.$AMPLIFY_APP_ID.amplifyapp.com"
 echo "🌐 Amplify URL: $AMPLIFY_URL"
 
 # ------------------------- Stage 2: Setup Backend CodeBuild -------------------------
@@ -170,7 +202,7 @@ echo "Creating Backend CodeBuild project..."
 
 if aws codebuild create-project \
     --name "$BACKEND_PROJECT_NAME" \
-    --source '{"type": "GITHUB", "location": "'"$GITHUB_URL"'", "buildspec": "buildspec-backend.yml"}' \
+    --source '{"type": "GITHUB", "location": "'"$GITHUB_URL"'", "buildspec": "buildspec-backend.yml", "sourceVersion": "'$TARGET_BRANCH'"}' \
     --artifacts '{"type": "NO_ARTIFACTS"}' \
     --environment '{
         "type": "LINUX_CONTAINER",
@@ -182,6 +214,7 @@ if aws codebuild create-project \
             {"name": "PROJECT_NAME", "value": "'$PROJECT_NAME'"},
             {"name": "AMPLIFY_URL", "value": "'$AMPLIFY_URL'"},
             {"name": "AMPLIFY_APP_ID", "value": "'$AMPLIFY_APP_ID'"},
+            {"name": "TARGET_BRANCH", "value": "'$TARGET_BRANCH'"},
             {"name": "PDF_TO_PDF_BUCKET_ARN", "value": "'$PDF_TO_PDF_BUCKET_ARN'"},
             {"name": "PDF_TO_HTML_BUCKET_ARN", "value": "'$PDF_TO_HTML_BUCKET_ARN'"}
         ]
@@ -298,6 +331,7 @@ echo "  User Pool Domain: $USER_POOL_DOMAIN"
 echo "  Identity Pool ID: $IDENTITY_POOL_ID"
 echo "  Amplify App ID: $AMPLIFY_APP_ID"
 echo "  Amplify URL: $AMPLIFY_URL"
+echo "  Target Branch: $TARGET_BRANCH"
 echo ""
 
 echo "✅ All backend outputs retrieved successfully!"
@@ -378,10 +412,10 @@ cd .. # Back to project root
 echo ""
 echo "🚀 Deploying frontend to Amplify..."
 
-# Create deployment
+# Create deployment using the target branch
 DEPLOYMENT_RESULT=$(aws amplify create-deployment \
     --app-id "$AMPLIFY_APP_ID" \
-    --branch-name main \
+    --branch-name "$TARGET_BRANCH" \
     --output json)
 
 ZIP_UPLOAD_URL=$(echo "$DEPLOYMENT_RESULT" | jq -r '.zipUploadUrl')
@@ -397,20 +431,20 @@ curl -T frontend/frontend-build.zip "$ZIP_UPLOAD_URL"
 echo "🚀 Starting Amplify frontend deployment..."
 aws amplify start-deployment \
     --app-id "$AMPLIFY_APP_ID" \
-    --branch-name main \
+    --branch-name "$TARGET_BRANCH" \
     --job-id "$JOB_ID"
 
 # Monitor deployment
 echo "⏳ Monitoring frontend deployment..."
 for i in {1..20}; do
-    STATUS=$(aws amplify get-job --app-id $AMPLIFY_APP_ID --branch-name main --job-id $JOB_ID --query 'job.summary.status' --output text)
+    STATUS=$(aws amplify get-job --app-id $AMPLIFY_APP_ID --branch-name $TARGET_BRANCH --job-id $JOB_ID --query 'job.summary.status' --output text)
     
     if [ "$STATUS" = "SUCCEED" ]; then
         echo "✅ Frontend deployment completed!"
         break
     elif [ "$STATUS" = "FAILED" ]; then
         echo "❌ Frontend deployment failed!"
-        aws amplify get-job --app-id $AMPLIFY_APP_ID --branch-name main --job-id $JOB_ID --query 'job.summary.result'
+        aws amplify get-job --app-id $AMPLIFY_APP_ID --branch-name $TARGET_BRANCH --job-id $JOB_ID --query 'job.summary.result'
         exit 1
     else
         echo "  Status: $STATUS (attempt $i/20)"
@@ -426,6 +460,7 @@ echo "=================================="
 echo ""
 echo "📊 Your secure PDF Accessibility application:"
 echo "  🌐 Frontend URL: $AMPLIFY_URL"
+echo "  🌿 Target Branch: $TARGET_BRANCH"
 echo "  🔐 User Pool ID: $USER_POOL_ID"
 echo "  📱 Amplify App ID: $AMPLIFY_APP_ID"
 echo ""
