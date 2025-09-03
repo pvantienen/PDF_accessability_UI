@@ -7,43 +7,28 @@ require("dotenv").config();
 // Get CDK context values (passed via --context)
 const app = new cdk.App();
 const deployTarget = app.node.tryGetContext('deploy') || 'both';
-const environment = app.node.tryGetContext('env') || 'dev';
 
 // Validate deployment target
 const validTargets = ['amplify', 'backend', 'both'];
 if (!validTargets.includes(deployTarget)) {
   console.error("❌ Invalid deployment target");
-  console.error("Usage: cdk deploy --context deploy=<target> [--context env=<environment>]");
+  console.error("Usage: cdk deploy --context deploy=<target>");
   console.error("Valid targets: amplify, backend, both");
-  console.error("Valid environments: dev, staging, prod (default: dev)");
   process.exit(1);
 }
 
 console.log(`🚀 Deploying: ${deployTarget}`);
-console.log(`🌍 Environment: ${environment}`);
 
-// Environment-specific configuration
-const envConfig = {
-  dev: {
-    account: process.env.AWS_ACCOUNT,
-    region: process.env.AWS_REGION,
-  },
-  staging: {
-    account: process.env.AWS_ACCOUNT_STAGING || process.env.AWS_ACCOUNT,
-    region: process.env.AWS_REGION_STAGING || process.env.AWS_REGION,
-  },
-  prod: {
-    account: process.env.AWS_ACCOUNT_PROD || process.env.AWS_ACCOUNT,
-    region: process.env.AWS_REGION_PROD || process.env.AWS_REGION,
-  }
+// Environment configuration
+const env = {
+  account: process.env.AWS_ACCOUNT,
+  region: process.env.AWS_REGION,
 };
-
-const currentEnv = envConfig[environment as keyof typeof envConfig];
 
 // Base required environment variables
 const baseRequiredVars = {
-  AWS_ACCOUNT: currentEnv.account,
-  AWS_REGION: currentEnv.region,
+  AWS_ACCOUNT: process.env.AWS_ACCOUNT,
+  AWS_REGION: process.env.AWS_REGION,
 };
 
 // Stack-specific required environment variables
@@ -97,29 +82,22 @@ function validateEnvVars(requiredVars: Record<string, string | undefined>, stack
   return true;
 }
 
-// Helper function to create stack names with environment suffix
-function getStackName(baseName: string, environment: string): string {
-  return environment === 'dev' ? baseName : `${baseName}-${environment}`;
-}
-
 // Deploy Amplify stack
 if (deployTarget === 'amplify' || deployTarget === 'both') {
   if (!validateEnvVars(amplifyRequiredVars, 'Amplify')) {
     process.exit(1);
   }
 
-  const stackName = getStackName('AmplifyHostingStack', environment);
-  const amplify = new AmplifyHostingStack(app, stackName, {
-    env: currentEnv,
-    description: `${environment.toUpperCase()} Environment Stack for PDF Accessibility V1 FRONTEND APP - Manual Deployment`,
+  const amplify = new AmplifyHostingStack(app, 'AmplifyHostingStack', {
+    env,
+    description: 'PDF Accessibility V1 FRONTEND APP - Manual Deployment',
     // Add amplify-specific props here if needed
   });
 
   // Add tags for better resource management
-  cdk.Tags.of(amplify).add('Environment', environment);
   cdk.Tags.of(amplify).add('StackType', 'Frontend');
 
-  console.log(`📦 Amplify stack configured: ${stackName}`);
+  console.log(`📦 Amplify stack configured: AmplifyHostingStack`);
 }
 
 // Deploy Backend stack
@@ -128,28 +106,25 @@ if (deployTarget === 'backend' || deployTarget === 'both') {
     process.exit(1);
   }
 
-  const stackName = getStackName('CdkBackendStack', environment);
   const backendProps: CdkBackendStackProps = {
-    env: currentEnv,
-    description: `${environment.toUpperCase()} Environment Stack for PDF Accessibility V1 BACKEND`,
+    env,
+    description: 'PDF Accessibility V1 BACKEND',
     // Backend-specific configuration
     amplifyWebsiteUrl: process.env.AMPLIFY_URL!,
     pdfToPdfBucketArn: process.env.PDF_TO_PDF_BUCKET_ARN!,
     pdfToHtmlBucketArn: process.env.PDF_TO_HTML_BUCKET_ARN!,
   };
 
-  const backend = new CdkBackendStack(app, stackName, backendProps);
+  const backend = new CdkBackendStack(app, 'CdkBackendStack', backendProps);
   
   // Add tags for better resource management
-  cdk.Tags.of(backend).add('Environment', environment);
   cdk.Tags.of(backend).add('StackType', 'Backend');
 
-  console.log(`📦 Backend stack configured: ${stackName}`);
+  console.log(`📦 Backend stack configured: CdkBackendStack`);
   console.log(`🔗 Using Amplify URL: ${process.env.AMPLIFY_URL}`);
 }
 
 console.log(`\n🎯 Deployment target: ${deployTarget}`);
-console.log(`🌍 Environment: ${environment}`);
 console.log("🚀 CDK synthesis complete - ready for deployment!");
 
 
@@ -168,5 +143,5 @@ console.log("🚀 CDK synthesis complete - ready for deployment!");
 // # Show diff before deployment
 // cdk diff --context deploy=backend
 
-// # Deploy multiple specific stacks
-// cdk deploy AmplifyHostingStack-prod CdkBackendStack-prod
+// # Deploy specific stacks
+// cdk deploy MyProject-AmplifyHostingStack MyProject-CdkBackendStack
