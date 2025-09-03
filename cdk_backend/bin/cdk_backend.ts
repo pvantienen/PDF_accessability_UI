@@ -4,10 +4,23 @@ import { CdkBackendStack, CdkBackendStackProps } from '../lib/cdk_backend-stack'
 import { AmplifyHostingStack } from "../lib/amplify-hosting-stack";
 require("dotenv").config();
 
+// Check if we're running bootstrap
+const isBootstrap = process.argv.includes('bootstrap');
+
 // Get CDK context values (passed via --context)
 const app = new cdk.App();
 const deployTarget = app.node.tryGetContext('deploy') || 'both';
 const environment = app.node.tryGetContext('env') || 'dev';
+
+// Skip validation and deployment logic during bootstrap
+if (isBootstrap) {
+  console.log('🔄 Bootstrap mode detected - skipping stack deployment');
+  console.log('💡 After bootstrap completes, deploy with:');
+  console.log('   cdk deploy --context deploy=amplify    # Deploy Amplify first');
+  console.log('   cdk deploy --context deploy=backend    # Deploy backend after setting env vars');
+  console.log('   cdk deploy --context deploy=both       # Deploy both stacks');
+  process.exit(0);
+}
 
 // Validate deployment target
 const validTargets = ['amplify', 'backend', 'both'];
@@ -151,22 +164,3 @@ if (deployTarget === 'backend' || deployTarget === 'both') {
 console.log(`\n🎯 Deployment target: ${deployTarget}`);
 console.log(`🌍 Environment: ${environment}`);
 console.log("🚀 CDK synthesis complete - ready for deployment!");
-
-
-
-
-/// Deployment instructions
-// # Deploy with approval for security changes
-// cdk deploy --context deploy=backend --require-approval=any-change
-
-// # Deploy with specific profile
-// cdk deploy --context deploy=amplify --profile my-aws-profile
-
-// # Deploy with CloudFormation parameters
-// cdk deploy --context deploy=backend --parameters MyParam=MyValue
-
-// # Show diff before deployment
-// cdk diff --context deploy=backend
-
-// # Deploy multiple specific stacks
-// cdk deploy AmplifyHostingStack-prod CdkBackendStack-prod
