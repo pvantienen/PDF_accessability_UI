@@ -1,5 +1,4 @@
 version: 0.2
-
 env:
   variables:
     NODE_VERSION: "18"
@@ -11,7 +10,6 @@ env:
     # AMPLIFY_APP_ID: Amplify application ID
     # PDF_TO_PDF_BUCKET_ARN: ARN of the PDF processing bucket
     # PDF_TO_HTML_BUCKET_ARN: ARN of the HTML conversion bucket
-
 phases:
   install:
     runtime-versions:
@@ -21,7 +19,6 @@ phases:
       - npm install -g aws-cdk
       - aws --version
       - echo "📦 CDK version $(cdk --version)"
-  
   pre_build:
     commands:
       - echo "🏗️ Setting up CDK environment for backend deployment..."
@@ -82,7 +79,6 @@ phases:
       - echo "🔄 Bootstrapping CDK environment..."
       - cdk bootstrap
       - echo "✅ CDK bootstrap completed"
-  
   build:
     commands:
       - echo "📁 Already in backend directory..."
@@ -93,7 +89,6 @@ phases:
       - echo "📝 Verifying stack outputs..."
       # Use the correct stack name pattern for backend stack
       - aws cloudformation describe-stacks --stack-name "${PROJECT_NAME}-BackendStack" --query 'Stacks[0].Outputs'
-  
   post_build:
     commands:
       - echo "✅ Backend CDK deployment completed!"
