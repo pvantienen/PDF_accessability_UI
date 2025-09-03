@@ -9,14 +9,14 @@ import { ThemeProvider } from '@mui/material/styles';
 import { AuthProvider, useAuth } from 'react-oidc-context';
 import {isMaintenanceMode} from './utilities/constants.jsx';
 
-import theme from './theme';
+import theme from './theme.jsx';
 import { UserPoolClientId, HostedUIUrl, Authority, UserPoolId } from './utilities/constants.jsx';
 
-import LandingPage from './pages/LandingPage';
+import LandingPage from './pages/LandingPage.jsx';
 
 import MainApp from './MainApp.jsx';
-import CallbackPage from './pages/CallbackPage'; 
-import MaintenancePage from './pages/MaintenancePage';
+import CallbackPage from './pages/CallbackPage.jsx'; 
+import MaintenancePage from './pages/MaintenancePage.jsx';
 
 const cognitoAuthConfig = {
   authority: `https://${Authority}/${UserPoolId}`,

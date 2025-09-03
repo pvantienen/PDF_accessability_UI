@@ -12,76 +12,16 @@ import * as events from 'aws-cdk-lib/aws-events';
 import * as targets from 'aws-cdk-lib/aws-events-targets';
 import * as cloudtrail from 'aws-cdk-lib/aws-cloudtrail';
 
+// Add this interface at the top of your file, after imports
+export interface CdkBackendStackProps extends cdk.StackProps {
+  amplifyWebsiteUrl?: string; // Optional since you might want to keep localhost for development
+  pdfToPdfBucketArn?: string;
+  pdfToHtmlBucketArn?: string;
+}
+
 export class CdkBackendStack extends cdk.Stack {
-  constructor(scope: Construct, id: string, props?: cdk.StackProps) {
+  constructor(scope: Construct, id: string, props?: CdkBackendStackProps) {
     super(scope, id, props);
-    
-    // START - Comment out S3 bucket and GitHub token requirements for Cognito-only deployment
-    // const bucketName = this.node.tryGetContext('bucketName');
-    // const githubToken = this.node.tryGetContext('githubToken');
-
-    // if (!githubToken || !bucketName) {
-    //   throw new Error(
-    //     'Both GitHub token and bucket name are required! Pass them using `-c githubToken=<token> -c bucketName=<name>`'
-    //   );
-    // }
-
-    // const bucket = s3.Bucket.fromBucketName(this, 'ImportedBucket', bucketName);
-    // console.log(`Using bucket: ${bucket.bucketName}`);
-    
-    // const githubToken_secret_manager = new secretsmanager.Secret(this, 'GitHubToken', {
-    //   secretName: 'pdfui-github-token',
-    //   description: 'GitHub Personal Access Token for Amplify',
-    //   secretStringValue: cdk.SecretValue.unsafePlainText(githubToken)
-    // });
-    // END - Comment out S3 bucket and GitHub token requirements
-
-    // START - Comment out entire Amplify section
-    // // --------- Create Amplify App (WITHOUT referencing the domain yet) ----------
-    // const amplifyApp = new amplify.App(this, 'pdfui', {
-    //   sourceCodeProvider: new amplify.GitHubSourceCodeProvider({
-    //     owner: 'ASUCICREPO',
-    //     repository: 'PDF_accessability_UI',
-    //     oauthToken: githubToken_secret_manager.secretValue
-    //   }),
-    //   buildSpec: cdk.aws_codebuild.BuildSpec.fromObjectToYaml({
-    //     version: '1.0',
-    //     frontend: {
-    //       phases: {
-    //         preBuild: {
-    //           commands: ['cd pdf_ui', 'npm ci']
-    //         },
-    //         build: {
-    //           commands: ['npm run build']
-    //         }
-    //       },
-    //       artifacts: {
-    //         baseDirectory: 'pdf_ui/build',
-    //         files: ['**/*']
-    //       },
-    //       cache: {
-    //         paths: ['pdf_ui/node_modules/**/*']
-    //       }
-    //     }
-    //   }),
-    // });
-
-    // VERY VERY IMPORANT THIS RULE IS STILL IMPORANT BUT PLEASE KEEP IN MIND THIS RULE NEEDS TO BE ADDED 
-    // AFTER THE APPLICATION IS DONE BUILDING AND NEEDS TO BE DELETED BEFORE DEPLOYING A NEW UPDATE 
-    // AND THEN NEEDS TO BE RE ADDED
-
-    // amplifyApp.addCustomRule({
-    //   source: '/<*>',
-    //   target: '/index.html',
-    //   status: amplify.RedirectStatus.REWRITE
-    // });
-
-    // // Create main branch
-    // const mainBranch = amplifyApp.addBranch('main', {
-    //   autoBuild: true,
-    //   stage: 'PRODUCTION'
-    // });
-    // END - Comment out entire Amplify section
 
     // Generate a unique domain prefix to avoid conflicts
     const domainPrefix = `pdf-ui-auth-${cdk.Names.uniqueId(this).toLowerCase()}`; // must be globally unique in that region
@@ -89,10 +29,8 @@ export class CdkBackendStack extends cdk.Stack {
     const Amazon_Group = 'AmazonUsers';
     const Admin_Group = 'AdminUsers';
     
-    // START - Update appUrl for Cognito-only deployment
-    // const appUrl = `https://main.${amplifyApp.appId}.amplifyapp.com`;
-    const appUrl = 'http://localhost:3000'; // Update this to your actual app URL when ready
-    // END - Update appUrl for Cognito-only deployment
+    const appUrl = props?.amplifyWebsiteUrl || 'http://localhost:3000';
+    console.log(`Using app URL: ${appUrl}`);
     
     // Create the Lambda role first with necessary permissions
     const postConfirmationLambdaRole = new iam.Role(this, 'PostConfirmationLambdaRole', {
@@ -256,7 +194,7 @@ export class CdkBackendStack extends cdk.Stack {
       ),
     });
 
-    // FIXED: Add S3 permissions for authenticated users
+    // UPDATED: Add S3 permissions for specific buckets using the provided ARNs
     authenticatedRole.addToPolicy(
       new iam.PolicyStatement({
         effect: iam.Effect.ALLOW,
@@ -267,8 +205,10 @@ export class CdkBackendStack extends cdk.Stack {
           's3:ListBucket',
         ],
         resources: [
-          'arn:aws:s3:::*/*', // TODO: Replace with specific bucket ARN for security - 'arn:aws:s3:::your-specific-bucket-name/*'
-          'arn:aws:s3:::*',   // TODO: Replace with specific bucket ARN for security - 'arn:aws:s3:::your-specific-bucket-name'
+          `${props?.pdfToPdfBucketArn}/*`,
+          `${props?.pdfToHtmlBucketArn}/*`,
+          props?.pdfToPdfBucketArn || "",
+          props?.pdfToHtmlBucketArn || "", //Default to empty if not given
         ],
       }),
     );
@@ -350,31 +290,7 @@ export class CdkBackendStack extends cdk.Stack {
       authorizer: userPoolAuthorizer,
       authorizationType: apigateway.AuthorizationType.COGNITO,
     });
-
-
-    // const hostedUiDomain = `https://pdf-ui-auth.auth.${this.region}.amazoncognito.com/login/continue?client_id=${userPoolClient.userPoolClientId}&redirect_uri=https%3A%2F%2Fmain.${amplifyApp.appId}.amplifyapp.com&response_type=code&scope=email+openid+phone+profile`
     const Authority = `cognito-idp.${this.region}.amazonaws.com/${userPool.userPoolId}`;
-
-    // START - Comment out Amplify environment variables
-    // // ------------------ Pass environment variables to Amplify ------------------
-    // mainBranch.addEnvironment('REACT_APP_BUCKET_NAME', bucket.bucketName);
-    // mainBranch.addEnvironment('REACT_APP_BUCKET_REGION', this.region);
-    // mainBranch.addEnvironment('REACT_APP_AWS_REGION', this.region);
-    
-    // mainBranch.addEnvironment('REACT_APP_USER_POOL_ID', userPool.userPoolId);
-    // mainBranch.addEnvironment('REACT_APP_AUTHORITY', Authority);
-
-    // mainBranch.addEnvironment('REACT_APP_USER_POOL_CLIENT_ID', userPoolClient.userPoolClientId);
-    // mainBranch.addEnvironment('REACT_APP_IDENTITY_POOL_ID', identityPool.ref);
-    // mainBranch.addEnvironment('REACT_APP_HOSTED_UI_URL', appUrl);
-    // mainBranch.addEnvironment('REACT_APP_DOMAIN_PREFIX', domainPrefix);
-
-    // mainBranch.addEnvironment('REACT_APP_UPDATE_FIRST_SIGN_IN', updateAttributesApi.urlForPath('/update-first-sign-in'));
-    // mainBranch.addEnvironment('REACT_APP_UPLOAD_QUOTA_API', updateAttributesApi.urlForPath('/upload-quota'));
-    // // Grant Amplify permission to read the secret
-    // githubToken_secret_manager.grantRead(amplifyApp);
-    // END - Comment out Amplify environment variables
-
 
      // ------------------- Integration of UpdateAttributesGroups Lambda -------------------
     // 1. Create IAM Role
@@ -445,34 +361,107 @@ export class CdkBackendStack extends cdk.Stack {
     new cdk.CfnOutput(this, 'UserPoolClientId', { value: userPoolClient.userPoolClientId });
     new cdk.CfnOutput(this, 'UserPoolDomain', { value: domainPrefix });
     new cdk.CfnOutput(this, 'IdentityPoolId', { value: identityPool.ref });
-    new cdk.CfnOutput(this, 'AuthenticatedRole', { value: authenticatedRole.roleArn });
+
+
+    // START - Comment out S3 bucket and GitHub token requirements for Cognito-only deployment
+    // const bucketName = this.node.tryGetContext('bucketName');
+    // const githubToken = this.node.tryGetContext('githubToken');
+
+    // if (!githubToken || !bucketName) {
+    //   throw new Error(
+    //     'Both GitHub token and bucket name are required! Pass them using `-c githubToken=<token> -c bucketName=<name>`'
+    //   );
+    // }
+
+    // const bucket = s3.Bucket.fromBucketName(this, 'ImportedBucket', bucketName);
+    // console.log(`Using bucket: ${bucket.bucketName}`);
     
+    // const githubToken_secret_manager = new secretsmanager.Secret(this, 'GitHubToken', {
+    //   secretName: 'pdfui-github-token',
+    //   description: 'GitHub Personal Access Token for Amplify',
+    //   secretStringValue: cdk.SecretValue.unsafePlainText(githubToken)
+    // });
+    // END - Comment out S3 bucket and GitHub token requirements
+
+    // START - Comment out entire Amplify section
+    // // --------- Create Amplify App (WITHOUT referencing the domain yet) ----------
+    // const amplifyApp = new amplify.App(this, 'pdfui', {
+    //   sourceCodeProvider: new amplify.GitHubSourceCodeProvider({
+    //     owner: 'ASUCICREPO',
+    //     repository: 'PDF_accessability_UI',
+    //     oauthToken: githubToken_secret_manager.secretValue
+    //   }),
+    //   buildSpec: cdk.aws_codebuild.BuildSpec.fromObjectToYaml({
+    //     version: '1.0',
+    //     frontend: {
+    //       phases: {
+    //         preBuild: {
+    //           commands: ['cd pdf_ui', 'npm ci']
+    //         },
+    //         build: {
+    //           commands: ['npm run build']
+    //         }
+    //       },
+    //       artifacts: {
+    //         baseDirectory: 'pdf_ui/build',
+    //         files: ['**/*']
+    //       },
+    //       cache: {
+    //         paths: ['pdf_ui/node_modules/**/*']
+    //       }
+    //     }
+    //   }),
+    // });
+
+    // VERY VERY IMPORANT THIS RULE IS STILL IMPORANT BUT PLEASE KEEP IN MIND THIS RULE NEEDS TO BE ADDED 
+    // AFTER THE APPLICATION IS DONE BUILDING AND NEEDS TO BE DELETED BEFORE DEPLOYING A NEW UPDATE 
+    // AND THEN NEEDS TO BE RE ADDED
+
+    // amplifyApp.addCustomRule({
+    //   source: '/<*>',
+    //   target: '/index.html',
+    //   status: amplify.RedirectStatus.REWRITE
+    // });
+
+    // // Create main branch
+    // const mainBranch = amplifyApp.addBranch('main', {
+    //   autoBuild: true,
+    //   stage: 'PRODUCTION'
+    // });
+    // END - Comment out entire Amplify section
+
+
+    // const appUrl = `https://main.${amplifyApp.appId}.amplifyapp.com`;
+
+
+    // START - Comment out Amplify environment variables
+    // // ------------------ Pass environment variables to Amplify ------------------
+    // mainBranch.addEnvironment('REACT_APP_BUCKET_NAME', bucket.bucketName);
+    // mainBranch.addEnvironment('REACT_APP_BUCKET_REGION', this.region);
+    // mainBranch.addEnvironment('REACT_APP_AWS_REGION', this.region);
+    
+    // mainBranch.addEnvironment('REACT_APP_USER_POOL_ID', userPool.userPoolId);
+    // mainBranch.addEnvironment('REACT_APP_AUTHORITY', Authority);
+
+    // mainBranch.addEnvironment('REACT_APP_USER_POOL_CLIENT_ID', userPoolClient.userPoolClientId);
+    // mainBranch.addEnvironment('REACT_APP_IDENTITY_POOL_ID', identityPool.ref);
+    // mainBranch.addEnvironment('REACT_APP_HOSTED_UI_URL', appUrl);
+    // mainBranch.addEnvironment('REACT_APP_DOMAIN_PREFIX', domainPrefix);
+
+    // mainBranch.addEnvironment('REACT_APP_UPDATE_FIRST_SIGN_IN', updateAttributesApi.urlForPath('/update-first-sign-in'));
+    // mainBranch.addEnvironment('REACT_APP_UPLOAD_QUOTA_API', updateAttributesApi.urlForPath('/upload-quota'));
+    // // Grant Amplify permission to read the secret
+    // githubToken_secret_manager.grantRead(amplifyApp);
+    // END - Comment out Amplify environment variables
+
+    // const hostedUiDomain = `https://pdf-ui-auth.auth.${this.region}.amazoncognito.com/login/continue?client_id=${userPoolClient.userPoolClientId}&redirect_uri=https%3A%2F%2Fmain.${amplifyApp.appId}.amplifyapp.com&response_type=code&scope=email+openid+phone+profile`
+
+
     // START - Comment out non-Cognito outputs
     // new cdk.CfnOutput(this, 'AmplifyAppURL', {
     //   value: appUrl,
     //   description: 'Amplify Application URL',
     // });
     // END - Comment out non-Cognito outputs
-
-    new cdk.CfnOutput(this, 'UpdateFirstSignInEndpoint', {
-      value: updateAttributesApi.urlForPath('/update-first-sign-in'),
-      description: 'POST requests to this URL to update attributes.',
-    });
-
-    new cdk.CfnOutput(this, 'CheckUploadQuotaEndpoint', {
-      value: updateAttributesApi.urlForPath('/upload-quota'),
-    });
-
-    // Additional outputs for easy integration later
-    new cdk.CfnOutput(this, 'CognitoAuthorityURL', {
-      value: Authority,
-      description: 'Cognito Authority URL for OIDC configuration',
-    });
-
-    new cdk.CfnOutput(this, 'HostedUIURL', {
-      value: `https://${domainPrefix}.auth.${this.region}.amazoncognito.com`,
-      description: 'Cognito Hosted UI Base URL',
-    });
-
   }
 }
