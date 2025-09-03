@@ -28,6 +28,8 @@ phases:
           exit 1
         fi
       # Create .env file with the described format (including dummy backend vars)
+      - echo "📁 Changing to CDK directory..."
+      - cd cdk_backend
       - echo "AWS_ACCOUNT=$AWS_ACCOUNT" > .env
       - echo "AWS_REGION=$AWS_REGION" >> .env
       # Add dummy backend environment variables to bypass validation
@@ -36,8 +38,6 @@ phases:
       - echo "PDF_TO_PDF_BUCKET_ARN=arn:aws:s3:::dummy-pdf-to-pdf-bucket" >> .env
       - echo "PDF_TO_HTML_BUCKET_ARN=arn:aws:s3:::dummy-pdf-to-html-bucket" >> .env
       - echo "Account:$AWS_ACCOUNT, Region:$AWS_REGION, Project:$PROJECT_NAME"
-      - echo "📁 Changing to CDK directory..."
-      - cd cdk_backend
       - echo "📦 Installing CDK dependencies..."
       - npm install
       - echo "🔄 Bootstrapping CDK environment..."
