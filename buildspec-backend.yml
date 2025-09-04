@@ -66,7 +66,7 @@ phases:
       - echo "✅ Backend infrastructure deployed"
       - echo "📝 Verifying stack outputs..."
       # Use the correct stack name pattern for backend stack
-      - aws cloudformation describe-stacks --stack-name "${PROJECT_NAME}-BackendStack" --query 'Stacks[0].Outputs'
+      - aws cloudformation describe-stacks --stack-name "${PROJECT_NAME}-CdkBackendStack" --query 'Stacks[0].Outputs'
   post_build:
     commands:
       - echo "✅ Backend CDK deployment completed!"
