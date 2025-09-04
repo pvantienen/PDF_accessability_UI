@@ -171,7 +171,7 @@ phases:
             break
           elif [ "$STATUS" = "FAILED" ]; then
             echo "❌ Frontend deployment failed!"
-            aws amplify get-job --app-id $AMPLIFY_APP_ID --branch-name $TARGET_BRANCH --job-id $JOB_ID --query 'job.summary.result'
+            aws amplify get-job --app-id $AMPLIFY_APP_ID --branch-name main --job-id $JOB_ID --query 'job.summary.result'
             exit 1
           else
             echo "  Status: $STATUS (attempt $i/20)"
