@@ -50,8 +50,6 @@ phases:
       - echo "PDF_TO_HTML_BUCKET_ARN=$PDF_TO_HTML_BUCKET_ARN" >> .env
       - echo "📋 Environment configuration:"
       - echo "Account:$AWS_ACCOUNT, Region:$AWS_REGION, Project:$PROJECT_NAME"
-      - echo "Amplify URL: $AMPLIFY_URL"
-      - echo "Amplify App ID: $AMPLIFY_APP_ID"
       - echo "📁 Changing to CDK directory..."
       - cd cdk_backend
       - echo "📦 Installing CDK dependencies..."
