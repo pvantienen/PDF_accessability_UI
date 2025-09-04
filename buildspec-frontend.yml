@@ -23,7 +23,7 @@ phases:
     commands:
       - echo "🚀 Installing dependencies for frontend deployment"
       # Install native jq binary instead of npm version
-      - apt-get update && apt-get install -y jq
+      - yum install -y jq
       - aws --version
       - echo "📦 Node version $(node --version)"
       - echo "📦 NPM version $(npm --version)"
