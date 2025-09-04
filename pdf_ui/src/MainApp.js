@@ -13,7 +13,7 @@ import theme from './theme';
 import AccessibilityChecker from './components/AccessibilityChecker';
 import FirstSignInDialog from './components/FirstSignInDialog';
 
-import { Authority, CheckAndIncrementQuota } from './utilities/constants';
+import { Authority, CheckAndIncrementQuota, isDemoMode } from './utilities/constants';
 import CustomCredentialsProvider from './utilities/CustomCredentialsProvider';
 
 function MainApp({ isLoggingOut, setIsLoggingOut }) {
@@ -40,6 +40,10 @@ function MainApp({ isLoggingOut, setIsLoggingOut }) {
 
   // Fetch credentials once user is authenticated
   useEffect(() => {
+    if (isDemoMode) {
+      setAwsCredentials({ accessKeyId: 'demo', secretAccessKey: 'demo', sessionToken: 'demo' });
+      return;
+    }
     if (auth.isAuthenticated) {
       (async () => {
         try {
@@ -66,6 +70,7 @@ function MainApp({ isLoggingOut, setIsLoggingOut }) {
 
   // Monitor authentication status within MainApp
   useEffect(() => {
+    if (isDemoMode) return;
     if (!auth.isAuthenticated && !isLoggingOut) {
       // If user is not authenticated, redirect to /home
       navigate('/home', { replace: true });
@@ -74,6 +79,7 @@ function MainApp({ isLoggingOut, setIsLoggingOut }) {
 
   // FUNCTION: Fetch current usage from the backend (mode="check")
   const refreshUsage = async () => {
+    if (isDemoMode) return; // skip in demo
     if (!auth.isAuthenticated) return; // not logged in yet
     setLoadingUsage(true);
     setUsageError('');
@@ -117,6 +123,7 @@ function MainApp({ isLoggingOut, setIsLoggingOut }) {
 
   // FUNCTION: Initialize limits from ID token
   const initializeLimitsFromProfile = () => {
+    if (isDemoMode) return;
     if (auth.isAuthenticated && auth.user?.profile) {
       const profile = auth.user.profile;
 

@@ -11,6 +11,8 @@ services:
     envVars:
       - key: NODE_VERSION
         value: 18
+      - key: REACT_APP_DEMO_MODE
+        value: "true"
       - key: REACT_APP_MAINTENANCE_MODE
         value: "false"
       - key: REACT_APP_AUTHORITY

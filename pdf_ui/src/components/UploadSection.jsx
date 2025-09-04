@@ -8,7 +8,7 @@ import { CircularProgress } from '@mui/material';
 import { InfoOutlined } from '@mui/icons-material';
 import { PDFDocument } from 'pdf-lib';
 
-import { region, Bucket, CheckAndIncrementQuota } from '../utilities/constants';
+import { region, Bucket, CheckAndIncrementQuota, isDemoMode } from '../utilities/constants';
 
 function sanitizeFilename(filename) {
   // Normalize the filename to decompose accented characters
@@ -85,7 +85,7 @@ function UploadSection({ onUploadComplete, awsCredentials, currentUsage, maxFile
 
   const handleUpload = async () => {
     // **1. Check if user has reached the upload limit**
-    if (currentUsage >= maxFilesAllowed) {
+    if (!isDemoMode && currentUsage >= maxFilesAllowed) {
       setErrorMessage('You have reached your upload limit. Please contact support for further assistance.');
       setOpenSnackbar(true);
       return;
@@ -97,7 +97,7 @@ function UploadSection({ onUploadComplete, awsCredentials, currentUsage, maxFile
       setOpenSnackbar(true);
       return;
     }
-    if (!awsCredentials) {
+    if (!isDemoMode && !awsCredentials) {
       setErrorMessage('AWS credentials not available yet. Please wait...');
       setOpenSnackbar(true);
       return;
@@ -105,7 +105,7 @@ function UploadSection({ onUploadComplete, awsCredentials, currentUsage, maxFile
 
     // **3. Attempt to Increment Usage First**
     const userSub = auth.user?.profile?.sub;
-    if (!userSub) {
+    if (!isDemoMode && !userSub) {
       setErrorMessage('User identifier not found. Are you logged in?');
       setOpenSnackbar(true);
       return;
@@ -115,7 +115,7 @@ function UploadSection({ onUploadComplete, awsCredentials, currentUsage, maxFile
 
     try {
       // **4. Call the Usage API to Increment**
-      const usageRes = await fetch(CheckAndIncrementQuota, {
+      const usageRes = isDemoMode ? { ok: true, json: async () => ({ newCount: currentUsage + 1 }) } : await fetch(CheckAndIncrementQuota, {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
@@ -145,14 +145,17 @@ function UploadSection({ onUploadComplete, awsCredentials, currentUsage, maxFile
       setUsageCount(updatedUsage);
       
       // **5. Proceed with S3 Upload**
-      const client = new S3Client({
-        region,
-        credentials: {
-          accessKeyId: awsCredentials.accessKeyId,
-          secretAccessKey: awsCredentials.secretAccessKey,
-          sessionToken: awsCredentials.sessionToken,
-        },
-      });
+      let client;
+      if (!isDemoMode) {
+        client = new S3Client({
+          region,
+          credentials: {
+            accessKeyId: awsCredentials.accessKeyId,
+            secretAccessKey: awsCredentials.secretAccessKey,
+            sessionToken: awsCredentials.sessionToken,
+          },
+        });
+      }
 
       const timestamp = new Date().toISOString().replace(/[-:.TZ]/g, ''); // YYYYMMDDTHHMMSS format
       const userEmail = auth.user?.profile?.email || 'user'; // Use email for unique filename, fallback to 'user'
@@ -167,8 +170,12 @@ function UploadSection({ onUploadComplete, awsCredentials, currentUsage, maxFile
         Body: selectedFile,
       };
 
-      const command = new PutObjectCommand(params);
-      await client.send(command);
+      if (!isDemoMode) {
+        const command = new PutObjectCommand(params);
+        await client.send(command);
+      } else {
+        await new Promise(r => setTimeout(r, 800));
+      }
 
       // **6. Notify Parent of Completion**
       onUploadComplete(uniqueFilename,sanitizedFileName);

@@ -7,7 +7,7 @@ import {
 } from 'react-router-dom';
 import { ThemeProvider } from '@mui/material/styles';
 import { AuthProvider, useAuth } from 'react-oidc-context';
-import {isMaintenanceMode} from './utilities/constants.jsx';
+import {isMaintenanceMode, isDemoMode} from './utilities/constants.jsx';
 
 import theme from './theme';
 import { UserPoolClientId, HostedUIUrl, Authority } from './utilities/constants';
@@ -72,12 +72,15 @@ function AppRoutes() {
 }
 
 function App() {
-  return (
+  const content = (
+    <ThemeProvider theme={theme}>
+      {isMaintenanceMode ? <MaintenancePage /> : <AppRoutes />}
+    </ThemeProvider>
+  );
+
+  return isDemoMode ? content : (
     <AuthProvider {...cognitoAuthConfig}>
-      <ThemeProvider theme={theme}>
-          {/* <AppRoutes /> */}
-          {isMaintenanceMode ? <MaintenancePage /> : <AppRoutes />}
-      </ThemeProvider>
+      {content}
     </AuthProvider>
   );
 }
