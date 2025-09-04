@@ -1,9 +1,10 @@
 #!/bin/bash
-# PDF Accessibility - Hybrid Deployment with Two-Stage Process
+# PDF Accessibility - Three-Stage Hybrid Deployment
 # Stage 1: Deploy Amplify infrastructure
 # Stage 2: Deploy Cognito with Amplify URL knowledge
+# Stage 3: Build and deploy frontend via CodeBuild
 
-echo "🚀 PDF Accessibility - Two-Stage Hybrid Deployment"
+echo "🚀 PDF Accessibility - Three-Stage Hybrid Deployment"
 echo "=============================================================="
 
 # ------------------------- Configuration -------------------------
@@ -50,7 +51,6 @@ if [ -z "$PROJECT_NAME" ]; then
     read -p "Enter project name [pdf-accessibility]: " PROJECT_NAME
     PROJECT_NAME=${PROJECT_NAME:-pdf-accessibility}
 fi
-
 
 # ------------------------- S3 Bucket Configuration -------------------------
 
@@ -135,6 +135,7 @@ AWS_REGION=${AWS_REGION:-us-east-1}
 # Project naming
 AMPLIFY_PROJECT_NAME="${PROJECT_NAME}-amplify"
 BACKEND_PROJECT_NAME="${PROJECT_NAME}-backend"
+FRONTEND_PROJECT_NAME="${PROJECT_NAME}-frontend"
 
 echo "📋 Configuration:"
 echo "  Project: $PROJECT_NAME"
@@ -144,6 +145,7 @@ echo "  Account: $AWS_ACCOUNT"
 echo "  Region: $AWS_REGION"
 echo "  Amplify CodeBuild: $AMPLIFY_PROJECT_NAME"
 echo "  Backend CodeBuild: $BACKEND_PROJECT_NAME"
+echo "  Frontend CodeBuild: $FRONTEND_PROJECT_NAME"
 echo ""
 
 # ------------------------- Setup IAM Role -------------------------
@@ -378,7 +380,6 @@ export IDENTITY_POOL_ID=$(aws cloudformation describe-stacks \
     --query 'Stacks[0].Outputs[?OutputKey==`IdentityPoolId`].OutputValue' \
     --output text 2>/dev/null)
 
-
 # Verify all outputs
 if [ "$USER_POOL_ID" = "None" ] || [ -z "$USER_POOL_ID" ]; then
     echo "❌ Could not get User Pool ID from CloudFormation stack"
@@ -400,7 +401,6 @@ if [ "$IDENTITY_POOL_ID" = "None" ] || [ -z "$IDENTITY_POOL_ID" ]; then
     exit 1
 fi
 
-
 # Display the retrieved values
 echo ""
 echo "🔐 Backend Configuration:"
@@ -415,124 +415,80 @@ echo ""
 
 echo "✅ All backend outputs retrieved successfully!"
 
-# ------------------------- Build Frontend with Configuration -------------------------
+# ------------------------- Stage 3: Setup Frontend CodeBuild -------------------------
 
 echo ""
-echo "🗂️ Building frontend with backend configuration..."
+echo "🗂️ Stage 3: Setting up frontend build and deployment..."
 
-# Check prerequisites
-if ! command -v node &> /dev/null; then
-    echo "❌ Node.js not available"
-    exit 1
-fi
+# Create Third CodeBuild project for Frontend
+echo "Creating Frontend CodeBuild project..."
 
-if ! command -v jq &> /dev/null; then
-    sudo yum install -y jq
-fi
-
-# Navigate to frontend
-if [ -d "frontend" ]; then
-    cd frontend
+if aws codebuild create-project \
+    --name "$FRONTEND_PROJECT_NAME" \
+    --source '{"type": "GITHUB", "location": "'"$GITHUB_URL"'", "buildspec": "buildspec-frontend.yml"}' \
+    --source-version "$TARGET_BRANCH" \
+    --artifacts '{"type": "NO_ARTIFACTS"}' \
+    --environment '{
+        "type": "LINUX_CONTAINER",
+        "image": "aws/codebuild/amazonlinux-x86_64-standard:5.0",
+        "computeType": "BUILD_GENERAL1_MEDIUM",
+        "environmentVariables": [
+            {"name": "AWS_ACCOUNT", "value": "'$AWS_ACCOUNT'"},
+            {"name": "AWS_REGION", "value": "'$AWS_REGION'"},
+            {"name": "PROJECT_NAME", "value": "'$PROJECT_NAME'"},
+            {"name": "AMPLIFY_URL", "value": "'$AMPLIFY_URL'"},
+            {"name": "AMPLIFY_APP_ID", "value": "'$AMPLIFY_APP_ID'"},
+            {"name": "TARGET_BRANCH", "value": "'$TARGET_BRANCH'"},
+            {"name": "USER_POOL_ID", "value": "'$USER_POOL_ID'"},
+            {"name": "USER_POOL_CLIENT_ID", "value": "'$USER_POOL_CLIENT_ID'"},
+            {"name": "USER_POOL_DOMAIN", "value": "'$USER_POOL_DOMAIN'"},
+            {"name": "IDENTITY_POOL_ID", "value": "'$IDENTITY_POOL_ID'"},
+            {"name": "PDF_TO_PDF_BUCKET_ARN", "value": "'$PDF_TO_PDF_BUCKET_ARN'"},
+            {"name": "PDF_TO_HTML_BUCKET_ARN", "value": "'$PDF_TO_HTML_BUCKET_ARN'"}
+        ]
+    }' \
+    --service-role "$ROLE_ARN" >/dev/null 2>&1; then
+    echo "✅ Frontend CodeBuild project created"
 else
-    echo "❌ Frontend directory not found"
-    exit 1
+    echo "ℹ️ Frontend CodeBuild project already exists or updated"
 fi
 
-# Create or update .env file with configuration
-echo "📝 Creating frontend configuration..."
-cat > .env << EOF
-# AWS Configuration
-REACT_APP_AWS_ACCESS_KEY_ID=
-REACT_APP_AWS_SECRET_ACCESS_KEY=
-REACT_APP_AWS_REGION=$AWS_REGION
+# Start Frontend build and deployment
+echo "🚀 Starting frontend build and deployment..."
 
-# Cognito Identity Pool (for anonymous access)
-REACT_APP_COGNITO_IDENTITY_POOL_ID=$IDENTITY_POOL_ID
-
-# ===== AUTHENTICATION CONFIGURATION (Required for Login) =====
-# Cognito User Pool Configuration
-REACT_APP_USER_POOL_CLIENT_ID=$USER_POOL_CLIENT_ID
-REACT_APP_USER_POOL_ID=$USER_POOL_ID
-REACT_APP_AUTHORITY=cognito-idp.$AWS_REGION.amazonaws.com
-
-# Hosted UI Configuration
-REACT_APP_DOMAIN_PREFIX=$USER_POOL_DOMAIN
-REACT_APP_HOSTED_UI_URL=$AMPLIFY_URL
-
-# S3 buckets
-PDF_TO_PDF_BUCKET_ARN=$PDF_TO_PDF_BUCKET_ARN
-PDF_TO_HTML_BUCKET_ARN=$PDF_TO_HTML_BUCKET_ARN
-
-# Maintenance Mode
-REACT_APP_MAINTENANCE_MODE=false
-EOF
-
-echo "✅ Frontend configuration created"
-
-# Install and build
-echo "Installing frontend dependencies..."
-npm install
-
-echo "Building React app with authentication configuration..."
-npm run build
-
-if [ ! -f "build/index.html" ]; then
-    echo "❌ Frontend build failed"
+FRONTEND_BUILD_ID=$(aws codebuild start-build --project-name "$FRONTEND_PROJECT_NAME" --query 'build.id' --output text)
+if [ -z "$FRONTEND_BUILD_ID" ] || [ "$FRONTEND_BUILD_ID" = "None" ]; then
+    echo "❌ Failed to start Frontend CodeBuild"
     exit 1
 fi
+echo "Frontend build started: $FRONTEND_BUILD_ID"
 
-# Create deployment package
-echo "📦 Creating deployment package..."
-cd build
-zip -r ../frontend-build.zip .
-cd ..
+# Wait for Frontend build to complete
+echo "⏳ Waiting for frontend build and deployment to complete..."
 
-echo "✅ Frontend built and packaged"
-cd .. # Back to project root
-
-# ------------------------- Deploy Frontend to Amplify -------------------------
-
-echo ""
-echo "🚀 Deploying frontend to Amplify..."
-
-# Create deployment using the target branch
-DEPLOYMENT_RESULT=$(aws amplify create-deployment \
-    --app-id "$AMPLIFY_APP_ID" \
-    --branch-name "$TARGET_BRANCH" \
-    --output json)
-
-ZIP_UPLOAD_URL=$(echo "$DEPLOYMENT_RESULT" | jq -r '.zipUploadUrl')
-JOB_ID=$(echo "$DEPLOYMENT_RESULT" | jq -r '.jobId')
-
-echo "🎯 Job ID: $JOB_ID"
-
-# Upload frontend package
-echo "📤 Uploading frontend..."
-curl -T frontend/frontend-build.zip "$ZIP_UPLOAD_URL"
-
-# Start deployment
-echo "🚀 Starting Amplify frontend deployment..."
-aws amplify start-deployment \
-    --app-id "$AMPLIFY_APP_ID" \
-    --branch-name "$TARGET_BRANCH" \
-    --job-id "$JOB_ID"
-
-# Monitor deployment
-echo "⏳ Monitoring frontend deployment..."
-for i in {1..20}; do
-    STATUS=$(aws amplify get-job --app-id $AMPLIFY_APP_ID --branch-name $TARGET_BRANCH --job-id $JOB_ID --query 'job.summary.status' --output text)
+while true; do
+    FRONTEND_BUILD_STATUS=$(aws codebuild batch-get-builds --ids "$FRONTEND_BUILD_ID" --query 'builds[0].buildStatus' --output text)
     
-    if [ "$STATUS" = "SUCCEED" ]; then
-        echo "✅ Frontend deployment completed!"
-        break
-    elif [ "$STATUS" = "FAILED" ]; then
-        echo "❌ Frontend deployment failed!"
-        aws amplify get-job --app-id $AMPLIFY_APP_ID --branch-name $TARGET_BRANCH --job-id $JOB_ID --query 'job.summary.result'
-        exit 1
-    else
-        echo "  Status: $STATUS (attempt $i/20)"
-        sleep 30
-    fi
+    case $FRONTEND_BUILD_STATUS in
+        "IN_PROGRESS")
+            echo "  🔄 Still building and deploying frontend... ($(date '+%H:%M:%S'))"
+            sleep 30
+            ;;
+        "SUCCEEDED")
+            echo "✅ Frontend build and deployment completed successfully!"
+            break
+            ;;
+        "FAILED")
+            echo "❌ Frontend build and deployment failed!"
+            echo "Check CodeBuild logs at:"
+            echo "https://$AWS_REGION.console.aws.amazon.com/codesuite/codebuild/projects/$FRONTEND_PROJECT_NAME/history"
+            exit 1
+            ;;
+        *)
+            echo "⏳ Build status: $FRONTEND_BUILD_STATUS"
+            sleep 30
+            ;;
+    esac
 done
 
 # ------------------------- Success -------------------------
@@ -546,6 +502,11 @@ echo "  🌐 Frontend URL: $AMPLIFY_URL"
 echo "  🌿 Target Branch: $TARGET_BRANCH"
 echo "  🔐 User Pool ID: $USER_POOL_ID"
 echo "  📱 Amplify App ID: $AMPLIFY_APP_ID"
+echo ""
+echo "🔧 CodeBuild Projects Created:"
+echo "  📦 Amplify Infrastructure: $AMPLIFY_PROJECT_NAME"
+echo "  🔐 Backend Services: $BACKEND_PROJECT_NAME"
+echo "  🌐 Frontend Build & Deploy: $FRONTEND_PROJECT_NAME"
 echo ""
 echo "🔧 Next steps:"
 echo "  1. Visit your application at: $AMPLIFY_URL"
