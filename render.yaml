@@ -1,0 +1,37 @@
+services:
+  - type: web
+    name: pdf-accessibility-ui
+    env: node
+    plan: free
+    rootDir: pdf_ui
+    buildCommand: npm ci && npm run build
+    startCommand: npm run start:render
+    autoDeploy: true
+    healthCheckPath: /
+    envVars:
+      - key: NODE_VERSION
+        value: 18
+      - key: REACT_APP_MAINTENANCE_MODE
+        value: "false"
+      - key: REACT_APP_AUTHORITY
+        value: ""
+      - key: REACT_APP_AWS_REGION
+        value: "us-east-1"
+      - key: REACT_APP_BUCKET_NAME
+        value: ""
+      - key: REACT_APP_BUCKET_REGION
+        value: "us-east-1"
+      - key: REACT_APP_DOMAIN_PREFIX
+        value: ""
+      - key: REACT_APP_HOSTED_UI_URL
+        value: ""
+      - key: REACT_APP_IDENTITY_POOL_ID
+        value: ""
+      - key: REACT_APP_UPDATE_FIRST_SIGN_IN
+        value: ""
+      - key: REACT_APP_UPLOAD_QUOTA_API
+        value: ""
+      - key: REACT_APP_USER_POOL_CLIENT_ID
+        value: ""
+      - key: REACT_APP_USER_POOL_ID
+        value: ""

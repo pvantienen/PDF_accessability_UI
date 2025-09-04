@@ -27,9 +27,13 @@
   },
   "scripts": {
     "start": "react-scripts start",
+    "start:render": "serve -s build -l $PORT",
     "build": "react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject"
+  },
+  "devDependencies": {
+    "serve": "^14.2.1"
   },
   "eslintConfig": {
     "extends": [
