@@ -12,6 +12,16 @@ import * as events from 'aws-cdk-lib/aws-events';
 import * as targets from 'aws-cdk-lib/aws-events-targets';
 import * as cloudtrail from 'aws-cdk-lib/aws-cloudtrail';
 
+// Helper function to convert S3 bucket name to ARN
+function bucketNameToArn(bucketName: string): string {
+  if (!bucketName || typeof bucketName !== 'string') {
+    throw new Error('Bucket name must be a non-empty string');
+  }
+  
+  // S3 bucket ARN format: arn:aws:s3:::bucket-name
+  return `arn:aws:s3:::${bucketName}`;
+}
+
 // Add this interface at the top of your file, after imports
 export interface CdkBackendStackProps extends cdk.StackProps {
   amplifyWebsiteUrl?: string; // Optional since you might want to keep localhost for development
@@ -22,6 +32,10 @@ export interface CdkBackendStackProps extends cdk.StackProps {
 export class CdkBackendStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: CdkBackendStackProps) {
     super(scope, id, props);
+
+    // Convert bucket names to ARNs using the helper function
+    const pdfToPdfBucketArn = props?.pdfToPdfBucketArn ? bucketNameToArn(props.pdfToPdfBucketArn) : "";
+    const pdfToHtmlBucketArn = props?.pdfToHtmlBucketArn ? bucketNameToArn(props.pdfToHtmlBucketArn) : "";
 
     // Generate a unique domain prefix to avoid conflicts
     const domainPrefix = `pdf-ui-auth-${cdk.Names.uniqueId(this).toLowerCase()}`; // must be globally unique in that region
@@ -194,7 +208,7 @@ export class CdkBackendStack extends cdk.Stack {
       ),
     });
 
-    // UPDATED: Add S3 permissions for specific buckets using the provided ARNs
+    // UPDATED: Add S3 permissions for specific buckets using the converted ARNs
     authenticatedRole.addToPolicy(
       new iam.PolicyStatement({
         effect: iam.Effect.ALLOW,
@@ -205,10 +219,10 @@ export class CdkBackendStack extends cdk.Stack {
           's3:ListBucket',
         ],
         resources: [
-          `${props?.pdfToPdfBucketArn}/*`,
-          `${props?.pdfToHtmlBucketArn}/*`,
-          props?.pdfToPdfBucketArn || "",
-          props?.pdfToHtmlBucketArn || "", //Default to empty if not given
+          `${pdfToPdfBucketArn}/*`,
+          `${pdfToHtmlBucketArn}/*`,
+          pdfToPdfBucketArn,
+          pdfToHtmlBucketArn, //Default to empty if not given
         ],
       }),
     );
