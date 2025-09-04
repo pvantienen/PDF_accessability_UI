@@ -22,10 +22,12 @@ phases:
       nodejs: $NODE_VERSION
     commands:
       - echo "🚀 Installing dependencies for frontend deployment"
-      - npm install -g jq
+      # Install native jq binary instead of npm version
+      - apt-get update && apt-get install -y jq
       - aws --version
       - echo "📦 Node version $(node --version)"
       - echo "📦 NPM version $(npm --version)"
+      - echo "📦 JQ version $(jq --version)"
       
   pre_build:
     commands:
